@@ -1390,6 +1390,61 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
     return true;
 }
 
+/* Generic implementation of block reading that can handle
+   both a block and its header.  */
+
+template<typename T>
+static bool ReadBlockOrHeader(T& block, const CDiskBlockPos& pos)
+{
+    block.SetNull();
+
+    // Open history file to read
+    CAutoFile filein(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION);
+    if (filein.IsNull())
+        return error("ReadBlockFromDisk: OpenBlockFile failed for %s", pos.ToString());
+
+    // Read block
+    try {
+        filein >> block;
+    }
+    catch (const std::exception& e) {
+        return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), pos.ToString());
+    }
+
+    // Check the header
+    // Dogecoin: We don't necessarily have block height, so we depend on using the base parameters
+    if (!CheckAuxPowProofOfWork(block, Params().GetConsensus(0)))
+        return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+
+    return true;
+}
+
+template<typename T>
+static bool ReadBlockOrHeader(T& block, const CBlockIndex* pindex)
+{
+    if (!ReadBlockOrHeader(block, pindex->GetBlockPos()))
+        return false;
+    if (block.GetHash() != pindex->GetBlockHash())
+        return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
+                pindex->ToString(), pindex->GetBlockPos().ToString());
+    return true;
+}
+
+// bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos)
+// {
+    // return ReadBlockOrHeader(block, pos);
+// }
+
+// bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
+// {
+    // return ReadBlockOrHeader(block, pindex);
+// }
+
+bool ReadBlockHeaderFromDisk(CBlockHeader& block, const CBlockIndex* pindex)
+{
+    return ReadBlockOrHeader(block, pindex);
+}
+
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
     CAmount nSubsidy = 12.5 * COIN;
