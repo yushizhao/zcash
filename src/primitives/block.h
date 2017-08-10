@@ -6,9 +6,13 @@
 #ifndef BITCOIN_PRIMITIVES_BLOCK_H
 #define BITCOIN_PRIMITIVES_BLOCK_H
 
+#include "auxpow.h"
 #include "primitives/transaction.h"
+#include "primitives/pureheader.h"
 #include "serialize.h"
 #include "uint256.h"
+
+#include <boost/shared_ptr.hpp>
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -17,20 +21,11 @@
  * in the block is a special one that creates a new coin owned by the creator
  * of the block.
  */
-class CBlockHeader
+class CBlockHeader : public CPureBlockHeader
 {
 public:
-    // header
-    static const size_t HEADER_SIZE=4+32+32+32+4+4+32; // excluding Equihash solution
-    static const int32_t CURRENT_VERSION=4;
-    int32_t nVersion;
-    uint256 hashPrevBlock;
-    uint256 hashMerkleRoot;
-    uint256 hashReserved;
-    uint32_t nTime;
-    uint32_t nBits;
-    uint256 nNonce;
-    std::vector<unsigned char> nSolution;
+    // auxpow (if this is a merge-minded block)
+    boost::shared_ptr<CAuxPow> auxpow;
 
     CBlockHeader()
     {
@@ -41,40 +36,35 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-        READWRITE(this->nVersion);
+        READWRITE(*(CPureBlockHeader*)this);
         nVersion = this->nVersion;
-        READWRITE(hashPrevBlock);
-        READWRITE(hashMerkleRoot);
-        READWRITE(hashReserved);
-        READWRITE(nTime);
-        READWRITE(nBits);
-        READWRITE(nNonce);
-        READWRITE(nSolution);
+
+        if (this->nVersion.IsAuxpow()) {
+            if (ser_action.ForRead())
+                auxpow.reset(new CAuxPow());
+            assert(auxpow);
+            READWRITE(*auxpow);
+        } else if (ser_action.ForRead())
+            auxpow.reset();
     }
 
     void SetNull()
     {
-        nVersion = CBlockHeader::CURRENT_VERSION;
-        hashPrevBlock.SetNull();
-        hashMerkleRoot.SetNull();
-        hashReserved.SetNull();
-        nTime = 0;
-        nBits = 0;
-        nNonce = uint256();
-        nSolution.clear();
+        CPureBlockHeader::SetNull();
+        auxpow.reset();
     }
-
-    bool IsNull() const
-    {
-        return (nBits == 0);
-    }
-
-    uint256 GetHash() const;
 
     int64_t GetBlockTime() const
     {
         return (int64_t)nTime;
     }
+
+    /**
+     * Set the block's auxpow (or unset it).  This takes care of updating
+     * the version accordingly.
+     * @param apow Pointer to the auxpow to use or NULL.
+     */
+    void SetAuxpow(CAuxPow* apow);
 };
 
 
@@ -119,11 +109,10 @@ public:
         block.nVersion       = nVersion;
         block.hashPrevBlock  = hashPrevBlock;
         block.hashMerkleRoot = hashMerkleRoot;
-        block.hashReserved   = hashReserved;
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
-        block.nSolution      = nSolution;
+        block.auxpow         = auxpow;
         return block;
     }
 
@@ -136,34 +125,6 @@ public:
     std::vector<uint256> GetMerkleBranch(int nIndex) const;
     static uint256 CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMerkleBranch, int nIndex);
     std::string ToString() const;
-};
-
-
-/**
- * Custom serializer for CBlockHeader that omits the nonce and solution, for use
- * as input to Equihash.
- */
-class CEquihashInput : private CBlockHeader
-{
-public:
-    CEquihashInput(const CBlockHeader &header)
-    {
-        CBlockHeader::SetNull();
-        *((CBlockHeader*)this) = header;
-    }
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-        READWRITE(this->nVersion);
-        nVersion = this->nVersion;
-        READWRITE(hashPrevBlock);
-        READWRITE(hashMerkleRoot);
-        READWRITE(hashReserved);
-        READWRITE(nTime);
-        READWRITE(nBits);
-    }
 };
 
 
@@ -199,10 +160,6 @@ struct CBlockLocator
     bool IsNull() const
     {
         return vHave.empty();
-    }
-
-    friend bool operator==(const CBlockLocator& a, const CBlockLocator& b) {
-        return (a.vHave == b.vHave);
     }
 };
 
