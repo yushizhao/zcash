@@ -30,6 +30,7 @@
 #include "wallet/asyncrpcoperation_sendmany.h"
 
 #include "auxpow.h"
+#include "dogecoin.h"
 
 #include <sstream>
 
