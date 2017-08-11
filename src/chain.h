@@ -147,7 +147,9 @@ public:
     //! (memory only) The anchor for the tree state up to the end of this block
     uint256 hashAnchorEnd;
 
-    //! block header
+	uint256 hashBlockPoW;
+    
+	//! block header
     int nVersion;
     uint256 hashMerkleRoot;
     uint256 hashReserved;
@@ -164,7 +166,7 @@ public:
         phashBlock = NULL;
         pprev = NULL;
         pskip = NULL;
-		pauxpow.reset();
+	    pauxpow.reset();
         nHeight = 0;
         nFile = 0;
         nDataPos = 0;
@@ -184,6 +186,7 @@ public:
         nBits          = 0;
         nNonce         = uint256();
         nSolution.clear();
+        hashBlockPoW   = uint256();		
     }
 
     CBlockIndex()
@@ -202,6 +205,7 @@ public:
         nBits          = block.nBits;
         nNonce         = block.nNonce;
         nSolution      = block.nSolution;
+        hashBlockPoW   = block.GetPoWHash();
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -343,6 +347,7 @@ public:
         READWRITE(nBits);
         READWRITE(nNonce);
         READWRITE(nSolution);
+        READWRITE(hashBlockPoW);
         if (this->nVersion.IsAuxpow()) {
             if (ser_action.ForRead())
                 pauxpow.reset(new CAuxPow());
