@@ -65,8 +65,12 @@ public:
         BOOST_STATIC_ASSERT(equihash_parameters_acceptable(N, K));
         nEquihashN = N;
         nEquihashK = K;
-
-        /**
+		
+        consensus.fStrictChainId = true;
+        consensus.fAllowLegacyBlocks = false;
+        consensus.fAllowAuxPow = true;
+        
+		/**
          * Build the genesis block. Note that the output of its generation
          * transaction cannot be spent since it did not originally exist in the
          * database (and is in any case of zero value).
