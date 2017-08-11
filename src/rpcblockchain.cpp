@@ -10,6 +10,9 @@
 #include "rpcserver.h"
 #include "sync.h"
 #include "util.h"
+#include "core_io.h"
+#include "dogecoin.h"
+#include "json/json_spirit_value.h"
 
 #include <stdint.h>
 
@@ -17,6 +20,7 @@
 
 #include <regex>
 
+using namespace json_spirit;
 using namespace std;
 
 extern void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry);
@@ -72,6 +76,35 @@ double GetDifficulty(const CBlockIndex* blockindex)
 double GetNetworkDifficulty(const CBlockIndex* blockindex)
 {
     return GetDifficultyINTERNAL(blockindex, true);
+}
+
+static Object auxpowToJSON(const CAuxPow& auxpow)
+{
+    Object tx;
+    tx.push_back(Pair("hex", EncodeHexTx(auxpow)));
+    TxToJSON(auxpow, auxpow.parentBlock.GetHash(), tx);
+
+    Object result;
+    result.push_back(Pair("tx", tx));
+    result.push_back(Pair("index", auxpow.nIndex));
+    result.push_back(Pair("chainindex", auxpow.nChainIndex));
+
+    Array branch;
+    BOOST_FOREACH (const uint256& node, auxpow.vMerkleBranch)
+        branch.push_back(node.GetHex());
+    result.push_back(Pair("merklebranch", branch));
+
+    branch.clear();
+    BOOST_FOREACH (const uint256& node, auxpow.vChainMerkleBranch)
+        branch.push_back(node.GetHex());
+    result.push_back(Pair("chainmerklebranch", branch));
+
+    CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
+    ssParent << auxpow.parentBlock;
+    const std::string strHex = HexStr(ssParent.begin(), ssParent.end());
+    result.push_back(Pair("parentblock", strHex));
+
+    return result;
 }
 
 UniValue blockheaderToJSON(const CBlockIndex* blockindex)
