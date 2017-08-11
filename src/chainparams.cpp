@@ -66,6 +66,7 @@ public:
         nEquihashN = N;
         nEquihashK = K;
 		
+        consensus.nAuxpowChainId = 0x0062; // 98 - Josh Wise!
         consensus.fStrictChainId = true;
         consensus.fAllowLegacyBlocks = false;
         consensus.fAllowAuxPow = true;
