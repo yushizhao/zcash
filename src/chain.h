@@ -110,8 +110,11 @@ public:
 
     //! pointer to the index of some further predecessor of this block
     CBlockIndex* pskip;
-
-    //! height of the entry in the chain. The genesis block has height 0
+	
+	//! pointer to the AuxPoW header, if this block has one
+    boost::shared_ptr<CAuxPow> pauxpow;
+    
+	//! height of the entry in the chain. The genesis block has height 0
     int nHeight;
 
     //! Which # file this block is stored in (blk?????.dat)
@@ -161,6 +164,7 @@ public:
         phashBlock = NULL;
         pprev = NULL;
         pskip = NULL;
+		pauxpow.reset();
         nHeight = 0;
         nFile = 0;
         nDataPos = 0;
@@ -339,7 +343,14 @@ public:
         READWRITE(nBits);
         READWRITE(nNonce);
         READWRITE(nSolution);
-    }
+        if (this->nVersion.IsAuxpow()) {
+            if (ser_action.ForRead())
+                pauxpow.reset(new CAuxPow());
+            assert(pauxpow);
+            READWRITE(*pauxpow);
+        } else if (ser_action.ForRead())
+            pauxpow.reset();
+	}
 
     uint256 GetBlockHash() const
     {
