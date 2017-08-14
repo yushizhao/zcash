@@ -10,7 +10,6 @@
 #include "init.h"
 #include "primitives/transaction.h"
 #include "base58.h"
-#include "crypto/equihash.h"
 #include "chain.h"
 #include "chainparams.h"
 #include "consensus/validation.h"
