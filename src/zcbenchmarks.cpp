@@ -180,17 +180,6 @@ std::vector<double> benchmark_solve_equihash_threaded(int nThreads)
 }
 #endif // ENABLE_MINING
 
-double benchmark_verify_equihash()
-{
-    CChainParams params = Params(CBaseChainParams::MAIN);
-    CBlock genesis = Params(CBaseChainParams::MAIN).GenesisBlock();
-    CBlockHeader genesis_header = genesis.GetBlockHeader();
-    struct timeval tv_start;
-    timer_start(tv_start);
-    CheckEquihashSolution(&genesis_header, params);
-    return timer_stop(tv_start);
-}
-
 double benchmark_large_tx()
 {
     // Number of inputs in the spending transaction that we will simulate

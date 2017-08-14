@@ -2581,8 +2581,6 @@ UniValue zc_benchmark(const UniValue& params, bool fHelp)
                 sample_times.insert(sample_times.end(), vals.begin(), vals.end());
             }
 #endif
-        } else if (benchmarktype == "verifyequihash") {
-            sample_times.push_back(benchmark_verify_equihash());
         } else if (benchmarktype == "validatelargetx") {
             sample_times.push_back(benchmark_large_tx());
         } else if (benchmarktype == "trydecryptnotes") {
