@@ -95,7 +95,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
 {
     const CChainParams& chainparams = Params();
     // Create new block
-    auto_ptr<CBlockTemplate> pblocktemplate(new CBlockTemplate());
+    unique_ptr<CBlockTemplate> pblocktemplate(new CBlockTemplate());
     if(!pblocktemplate.get())
         return NULL;
     CBlock *pblock = &pblocktemplate->block; // pointer for convenience
@@ -481,7 +481,7 @@ void static BitcoinMiner(CWallet *pwallet)
             CBlockIndex* pindexPrev = chainActive.Tip();
             const Consensus::Params &consensus = Params().GetConsensus(pindexPrev -> nHeight + 1);
 
-            auto_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey));
+            unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey));
             if (!pblocktemplate.get())
             {
                 LogPrintf("Error in DogecoinMiner: Keypool ran out, please call keypoolrefill before restarting the mining thread\n");
