@@ -150,7 +150,7 @@ public:
 	uint256 hashBlockPoW;
     
 	//! block header
-    int nVersion;
+    CBlockVersion nVersion;
     uint256 hashMerkleRoot;
     uint256 hashReserved;
     unsigned int nTime;
