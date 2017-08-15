@@ -9,7 +9,6 @@
 #include "chainparams.h"
 #include "consensus/consensus.h"
 #include "consensus/validation.h"
-#include "crypto/scrypt.h"
 #include "dogecoin.h"
 #include "hash.h"
 #include "main.h"
@@ -381,34 +380,30 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 // nonce is 0xffff0000 or above, the block is rebuilt and nNonce starts over at
 // zero.
 //
-bool static ScanHash(CBlockHeader *pblock, uint32_t& nNonce, uint256 *phash, char *pscratchpad)
+bool static ScanHash(const CBlockHeader *pblock, uint32_t& nNonce, uint256 *phash)
 {
     // Write the first 76 bytes of the block header to a double-SHA256 state.
-    //CHash256 hasher;
-    //CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-    //ss << *pblock;
-    //assert(ss.size() == 80);
-    //hasher.Write((unsigned char*)&ss[0], 76);
+    CHash256 hasher;
+    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+    ss << *pblock;
+    assert(ss.size() == 80);
+    hasher.Write((unsigned char*)&ss[0], 76);
 
     while (true) {
         nNonce++;
 
         // Write the last 4 bytes of the block header (the nonce) to a copy of
         // the double-SHA256 state, and compute the result.
-        pblock->nNonce = nNonce;
-        scrypt_1024_1_1_256_sp(BEGIN(pblock->nVersion), (char*)phash, pscratchpad);
+        CHash256(hasher).Write((unsigned char*)&nNonce, 4).Finalize((unsigned char*)phash);
 
         // Return the nonce if the hash has at least some zero bits,
         // caller will check if it has enough to reach the target
-        // TODO: I don't like having this hard-coded, it's too coarse for regtest, too fine for main
-        if (((uint8_t*)phash)[31] == 0)
+        if (((uint16_t*)phash)[15] == 0)
             return true;
 
         // If nothing found after trying for a while, return -1
-        if ((nNonce & 0x1fff) == 0)
+        if ((nNonce & 0xfff) == 0)
             return false;
-        if ((nNonce & 0x01ff) == 0)
-            boost::this_thread::interruption_point();
     }
 }
 
@@ -505,10 +500,9 @@ void static BitcoinMiner(CWallet *pwallet)
             arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->nBits);
             uint256 hash;
             uint32_t nNonce = 0;
-            char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
             while (true) {
                 // Check if something found
-                if (ScanHash(pblock, nNonce, &hash, scratchpad))
+                if (ScanHash(pblock, nNonce, &hash))
                 {
                     if (UintToArith256(hash) <= hashTarget)
                     {
