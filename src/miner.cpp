@@ -285,7 +285,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
             // policy here, but we still have to ensure that the block we
             // create only contains transactions that are valid in new blocks.
             CValidationState state;
-            if (!CheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true))
+            if (!ContextualCheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true, Params().GetConsensus()))
                 continue;
 
             UpdateCoins(tx, state, view, nHeight);
@@ -329,7 +329,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
 
         // Compute final coinbase transaction.
         const Consensus::Params &consensus = chainparams.GetConsensus();
-        txNew.vout[0].nValue = nFees + GetDogecoinBlockSubsidy(nHeight, consensus, pindexPrev->GetBlockHash());
+        txNew.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, consensus);
         txNew.vin[0].scriptSig = CScript() << nHeight << OP_0;
         pblock->vtx[0] = txNew;
         pblocktemplate->vTxFees[0] = -nFees;
