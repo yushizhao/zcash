@@ -152,7 +152,7 @@ public:
     uint256 hashMerkleRoot;
     uint32_t nTime;
     uint32_t nBits;
-    uint256  nNonce;
+    uint32_t  nNonce;
 
     CPureBlockHeader()
     {
@@ -180,7 +180,7 @@ public:
         hashMerkleRoot.SetNull();
         nTime = 0;
         nBits = 0;
-        nNonce = uint256();
+        nNonce = 0;
     }
 
     bool IsNull() const

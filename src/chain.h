@@ -155,7 +155,7 @@ public:
     uint256 hashReserved;
     unsigned int nTime;
     unsigned int nBits;
-    uint256 nNonce;
+    uint32_t nNonce;
     std::vector<unsigned char> nSolution;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
@@ -181,11 +181,9 @@ public:
 
         nVersion       = 0;
         hashMerkleRoot = uint256();
-        hashReserved   = uint256();
         nTime          = 0;
         nBits          = 0;
-        nNonce         = uint256();
-        nSolution.clear();
+        nNonce         = 0;
         hashBlockPoW   = uint256();		
     }
 
