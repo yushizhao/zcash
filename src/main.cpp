@@ -1375,7 +1375,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos)
     }
 
     // Check the header
-    if (!CheckAuxPowProofOfWork(block, Params().GetConsensus(0)))
+    if (!CheckAuxPowProofOfWork(block, Params().GetConsensus()))
         return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 
     return true;
@@ -1414,7 +1414,7 @@ static bool ReadBlockOrHeader(T& block, const CDiskBlockPos& pos)
 
     // Check the header
     // Dogecoin: We don't necessarily have block height, so we depend on using the base parameters
-    if (!CheckAuxPowProofOfWork(block, Params().GetConsensus(0)))
+    if (!CheckAuxPowProofOfWork(block, Params().GetConsensus()))
         return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 
     return true;
@@ -3033,7 +3033,7 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, bool f
                          REJECT_INVALID, "version-too-low");
 
     // Check proof of work matches claimed amount
-    if (fCheckPOW && !CheckAuxPowProofOfWork(block, Params().GetConsensus(0)))
+    if (fCheckPOW && !CheckAuxPowProofOfWork(block, Params().GetConsensus()))
         return state.DoS(50, error("CheckBlockHeader(): proof of work failed"),
                          REJECT_INVALID, "high-hash");
 
