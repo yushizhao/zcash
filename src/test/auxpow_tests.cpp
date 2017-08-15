@@ -180,7 +180,7 @@ CAuxpowBuilder::buildCoinbaseData(bool header, const std::vector<unsigned char>&
 
 BOOST_AUTO_TEST_CASE(check_auxpow)
 {
-    const Consensus::Params& params = Params().GetConsensus(371337);
+    const Consensus::Params& params = Params().GetConsensus();
     CAuxpowBuilder builder(5, 42);
     CAuxPow auxpow;
 
@@ -339,16 +339,16 @@ mineBlock(CBlockHeader& block, bool ok, int nBits = -1)
     }
 
     if (ok)
-        BOOST_CHECK(CheckProofOfWork(block.GetPoWHash(), nBits, Params().GetConsensus(371337)));
+        BOOST_CHECK(CheckProofOfWork(block.GetPoWHash(), nBits, Params().GetConsensus()));
     else
-        BOOST_CHECK(!CheckProofOfWork(block.GetPoWHash(), nBits, Params().GetConsensus(371337)));
+        BOOST_CHECK(!CheckProofOfWork(block.GetPoWHash(), nBits, Params().GetConsensus()));
 }
 
 BOOST_AUTO_TEST_CASE(auxpow_pow)
 {
     /* Use regtest parameters to allow mining with easy difficulty.  */
     SelectParams(CBaseChainParams::REGTEST);
-    const Consensus::Params& params = Params().GetConsensus(371337);
+    const Consensus::Params& params = Params().GetConsensus();
 
     const arith_uint256 target = (~arith_uint256(0) >> 1);
     CBlockHeader block;

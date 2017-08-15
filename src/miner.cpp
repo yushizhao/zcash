@@ -102,7 +102,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
 
     /* Initialise the block version.  */
     pblock->nVersion = CBlockHeader::CURRENT_VERSION;
-    pblock->nVersion.SetChainId(chainparams.GetConsensus(0).nAuxpowChainId);
+    pblock->nVersion.SetChainId(chainparams.GetConsensus().nAuxpowChainId);
 
     // -regtest only: allow overriding block.nVersion with
     // -blockversion=N to test forking scenarios
@@ -328,7 +328,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
         LogPrintf("CreateNewBlock(): total size %u\n", nBlockSize);
 
         // Compute final coinbase transaction.
-        const Consensus::Params &consensus = chainparams.GetConsensus(nHeight);
+        const Consensus::Params &consensus = chainparams.GetConsensus();
         txNew.vout[0].nValue = nFees + GetDogecoinBlockSubsidy(nHeight, consensus, pindexPrev->GetBlockHash());
         txNew.vin[0].scriptSig = CScript() << nHeight << OP_0;
         pblock->vtx[0] = txNew;
@@ -479,7 +479,7 @@ void static BitcoinMiner(CWallet *pwallet)
             //
             unsigned int nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
             CBlockIndex* pindexPrev = chainActive.Tip();
-            const Consensus::Params &consensus = Params().GetConsensus(pindexPrev -> nHeight + 1);
+            const Consensus::Params &consensus = Params().GetConsensus();
 
             unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey));
             if (!pblocktemplate.get())
