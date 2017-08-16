@@ -6,7 +6,6 @@
 #include "primitives/pureheader.h"
 
 #include "chainparams.h"
-#include "crypto/scrypt.h"
 #include "hash.h"
 #include "utilstrencodings.h"
 
