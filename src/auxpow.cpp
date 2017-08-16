@@ -87,15 +87,6 @@ int CMerkleTx::GetDepthInMainChain(const CBlockIndex*& pindexRet) const
     return nResult;
 }
 
-int CMerkleTx::GetBlocksToMaturity() const
-{
-    if (!IsCoinBase())
-        return 0;
-    int nCoinbaseMaturity = Params().GetConsensus().nCoinbaseMaturity;
-    return std::max(0, (nCoinbaseMaturity + 1) - GetDepthInMainChain());
-}
-
-
 bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectAbsurdFee)
 {
     CValidationState state;
