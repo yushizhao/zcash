@@ -128,6 +128,7 @@ public:
             2777            // * estimated number of transactions per day after checkpoint
                             //   total number of tx / (checkpoint block height / (24 * 24))
         };
+	}	
 };
 static CMainParams mainParams;
 
@@ -220,10 +221,6 @@ public:
         pchMessageStart[2] = 0x3f;
         pchMessageStart[3] = 0x5f;
         nMaxTipAge = 24 * 60 * 60;
-        const size_t N = 48, K = 5;
-        BOOST_STATIC_ASSERT(equihash_parameters_acceptable(N, K));
-        nEquihashN = N;
-        nEquihashK = K;
         genesis.nTime = 1296688602;
         genesis.nBits = 0x200f0f0f;
         genesis.nNonce = 0;
