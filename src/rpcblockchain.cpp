@@ -12,7 +12,6 @@
 #include "util.h"
 #include "core_io.h"
 #include "dogecoin.h"
-#include "json/json_spirit_value.h"
 
 #include <stdint.h>
 
@@ -20,7 +19,6 @@
 
 #include <regex>
 
-using namespace json_spirit;
 using namespace std;
 
 extern void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry);
@@ -78,18 +76,18 @@ double GetNetworkDifficulty(const CBlockIndex* blockindex)
     return GetDifficultyINTERNAL(blockindex, true);
 }
 
-static Object auxpowToJSON(const CAuxPow& auxpow)
+UniValue auxpowToJSON(const CAuxPow& auxpow)
 {
-    Object tx;
+    UniValue tx;
     tx.push_back(Pair("hex", EncodeHexTx(auxpow)));
     TxToJSON(auxpow, auxpow.parentBlock.GetHash(), tx);
 
-    Object result;
+    UniValue result;
     result.push_back(Pair("tx", tx));
     result.push_back(Pair("index", auxpow.nIndex));
     result.push_back(Pair("chainindex", auxpow.nChainIndex));
 
-    Array branch;
+    UniValue branch(UniValue::VARR);	
     BOOST_FOREACH (const uint256& node, auxpow.vMerkleBranch)
         branch.push_back(node.GetHex());
     result.push_back(Pair("merklebranch", branch));
