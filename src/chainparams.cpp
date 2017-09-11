@@ -4,7 +4,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "main.h"
-#include "crypto/equihash.h"
 
 #include "util.h"
 #include "utilstrencodings.h"
@@ -72,10 +71,31 @@ public:
         const char* pszTimestamp = "Zcash0b9c4eef8b7cc417ee5001e3500984b6fea35683a7cac141a043c42064835d34";
         CMutableTransaction txNew;
         txNew.vin.resize(1);
-        txNew.vout.resize(1);
+        txNew.vout.resize(1+16529043);
         txNew.vin[0].scriptSig = CScript() << 520617983 << CScriptNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 0;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+        
+        /* Open LEVELDB database */
+        const std::string PATH = "/btc/478558_A_1460";
+        
+        CLevelDBWrapper db(PATH, 1024*64, false, false, true);
+        
+        static const char DB_COIN = 'C';
+        static const char DB_BEST_BLOCK = 'B';
+        
+        COutPoint inner_key;
+        CoinEntry key(&inner_key);
+        Coin value;
+        std::unique_ptr<CDBIterator> iter(db.NewIterator());
+        iter->Seek(DB_COIN);
+
+        while (iter->Valid()) {        
+            iter->GetKey(key);
+            iter->GetValue(value);
+            txNew.vout[inner_key.n] = value.out;
+            iter->Next();
+        }
+        
+        
         genesis.vtx.push_back(txNew);
         genesis.hashPrevBlock.SetNull();
         genesis.hashMerkleRoot = genesis.BuildMerkleTree();
@@ -84,14 +104,22 @@ public:
         genesis.nBits    = 0x1f07ffff;
         genesis.nNonce   = 0;       
         consensus.hashGenesisBlock = genesis.GetHash();
+        
+        uint256 hashBestChain;
+        db.Read(DB_BEST_BLOCK, hashBestChain);
+    
         // assert(consensus.hashGenesisBlock == uint256S("0x00040fe8ec8471911baa1db1266ea15dd06b4a8a5c453883c000b031973dce08"));
+        assert(consensus.hashGenesisBlock == hashBestChain.ToString());
         // assert(genesis.hashMerkleRoot == uint256S("0xc4eaa58879081de3c24a7b117ed2b28300e7ec4c4c1dff1d3f1268b7857a4ddb"));
-
+        assert(genesis.hashMerkleRoot == inner_key.hash.ToString());
+        
+        delete db;
+        
         vFixedSeeds.clear();
         vSeeds.clear();
-        vSeeds.push_back(CDNSSeedData("z.cash", "dnsseed.z.cash")); // Zcash
-        vSeeds.push_back(CDNSSeedData("str4d.xyz", "dnsseed.str4d.xyz")); // @str4d
-        vSeeds.push_back(CDNSSeedData("znodes.org", "dnsseed.znodes.org")); // @bitcartel
+        // vSeeds.push_back(CDNSSeedData("z.cash", "dnsseed.z.cash")); // Zcash
+        // vSeeds.push_back(CDNSSeedData("str4d.xyz", "dnsseed.str4d.xyz")); // @str4d
+        // vSeeds.push_back(CDNSSeedData("znodes.org", "dnsseed.znodes.org")); // @bitcartel
 
         // guarantees the first 2 characters, when base58 encoded, are "t1"
         base58Prefixes[PUBKEY_ADDRESS]     = {0x1C,0xB8};
@@ -107,7 +135,7 @@ public:
         // guarantees the first 2 characters, when base58 encoded, are "SK"
         base58Prefixes[ZCSPENDING_KEY]     = {0xAB,0x36};
 
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
+        // vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
 
         fMiningRequiresPeers = true;
         fDefaultConsistencyChecks = false;
@@ -115,18 +143,18 @@ public:
         fMineBlocksOnDemand = false;
         fTestnetToBeDeprecatedFieldRPC = false;
 
-        checkpointData = (Checkpoints::CCheckpointData) {
-            boost::assign::map_list_of
-            (0, consensus.hashGenesisBlock)
-            (2500, uint256S("0x00000006dc968f600be11a86cbfbf7feb61c7577f45caced2e82b6d261d19744"))
-            (15000, uint256S("0x00000000b6bc56656812a5b8dcad69d6ad4446dec23b5ec456c18641fb5381ba"))
-            (67500, uint256S("0x000000006b366d2c1649a6ebb4787ac2b39c422f451880bc922e3a6fbd723616")),
-            1487767578,     // * UNIX timestamp of last checkpoint block
-            325430,         // * total number of transactions between genesis and last checkpoint
-                            //   (the tx=... number in the SetBestChain debug.log lines)
-            2777            // * estimated number of transactions per day after checkpoint
-                            //   total number of tx / (checkpoint block height / (24 * 24))
-        };
+        // checkpointData = (Checkpoints::CCheckpointData) {
+            // boost::assign::map_list_of
+            // (0, consensus.hashGenesisBlock)
+            // (2500, uint256S("0x00000006dc968f600be11a86cbfbf7feb61c7577f45caced2e82b6d261d19744"))
+            // (15000, uint256S("0x00000000b6bc56656812a5b8dcad69d6ad4446dec23b5ec456c18641fb5381ba"))
+            // (67500, uint256S("0x000000006b366d2c1649a6ebb4787ac2b39c422f451880bc922e3a6fbd723616")),
+            // 1487767578,     // * UNIX timestamp of last checkpoint block
+            // 325430,         // * total number of transactions between genesis and last checkpoint
+                              // (the tx=... number in the SetBestChain debug.log lines)
+            // 2777            // * estimated number of transactions per day after checkpoint
+                              // total number of tx / (checkpoint block height / (24 * 24))
+        // };
 	}	
 };
 static CMainParams mainParams;
