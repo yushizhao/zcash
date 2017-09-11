@@ -68,6 +68,8 @@ public:
          * >>> from pyblake2 import blake2s
          * >>> 'Zcash' + blake2s(b'The Economist 2016-10-29 Known unknown: Another crypto-currency is born. BTC#436254 0000000000000000044f321997f336d2908cf8c8d6893e88dbf067e2d949487d ETH#2521903 483039a6b6bd8bd05f0584f9a078d075e454925eb71c1f13eaff59b405a721bb DJIA close on 27 Oct 2016: 18,169.68').hexdigest()
          */
+        genesis.SetNull();
+        
         const char* pszTimestamp = "Zcash0b9c4eef8b7cc417ee5001e3500984b6fea35683a7cac141a043c42064835d34";
         CMutableTransaction txNew;
         txNew.vin.resize(1);
@@ -79,8 +81,8 @@ public:
         
         CLevelDBWrapper db(PATH, 1024*64, false, false, true);
         
-        static const char DB_COIN = 'C';
-        static const char DB_BEST_BLOCK = 'B';
+        // static const char DB_COIN = 'C';
+        // static const char DB_BEST_BLOCK = 'B';
         
         COutPoint inner_key;
         CoinEntry key(&inner_key);
@@ -112,8 +114,6 @@ public:
         assert(consensus.hashGenesisBlock == hashBestChain.ToString());
         // assert(genesis.hashMerkleRoot == uint256S("0xc4eaa58879081de3c24a7b117ed2b28300e7ec4c4c1dff1d3f1268b7857a4ddb"));
         assert(genesis.hashMerkleRoot == inner_key.hash.ToString());
-        
-        delete db;
         
         vFixedSeeds.clear();
         vSeeds.clear();
