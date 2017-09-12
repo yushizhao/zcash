@@ -108,6 +108,7 @@ int main(int argc, char* argv[]) {
 	uint256 genesisHash = genesis.GetHash();
     uint256 txHash = genesis.vtx[0].GetHash();    
     std::cout << genesisHash.ToString() << "\n";
+    //d0a2116a32a88a6393a1f6ce9d61ceb9fbe366f828cfdf785b662b481d550795
     std::cout << txHash.ToString() << "\n";
     
     return 0;
