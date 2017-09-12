@@ -1,68 +1,58 @@
-#include "/home/blockchain/leveldbview/bitcoin-master/src/dbwrapper.h"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/uint256.h"
+#include "leveldbwrapper.h"
+#include "leveldbwrapper.cpp"
+#include "uint256.h"
 #include "uint256.cpp"
-#include "utilstrencodings.cpp"
-#include "utilstrencodings.h"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/txdb.h"
-#include "dbwrapper.cpp"
-#include "fs.h"
-#include "fs.cpp"
+#include "coins.h"
+#include "coins.cpp"
 #include "util.h"
 #include "util.cpp"
 #include "utiltime.h"
 #include "utiltime.cpp"
+#include "utilstrencodings.cpp"
+#include "utilstrencodings.h"
 #include "random.h"
 #include "random.cpp"
-#include "crypto/sha512.h"
-#include "crypto/sha512.cpp"
-#include "crypto/sha256.h"
-#include "crypto/sha256.cpp"
-#include "crypto/chacha20.h"
-#include "crypto/chacha20.cpp"
-#include "crypto/ripemd160.h"
-#include "crypto/ripemd160.cpp"
-#include "crypto/hmac_sha512.h"
-#include "crypto/hmac_sha512.cpp"
+#include "compressor.h"
+#include "compressor.cpp"
+#include "hash.h"
+#include "hash.cpp"
+#include "pubkey.h"
+#include "pubkey.cpp"
 #include "script/script.h"
 #include "script/script.cpp"
 #include "support/cleanse.h"
 #include "support/cleanse.cpp"
-#include "support/lockedpool.h"
-#include "support/lockedpool.cpp"
+#include "crypto/sha256.h"
+#include "crypto/sha256.cpp"
+#include "crypto/ripemd160.h"
+#include "crypto/ripemd160.cpp"
+#include "crypto/sha512.h"
+#include "crypto/sha512.cpp"
+#include "crypto/hmac_sha512.h"
+#include "crypto/hmac_sha512.cpp"
+#include "primitives/transaction.h"
+#include "primitives/transaction.cpp"
+#include "primitives/block.h"
+#include "primitives/block.cpp"
+#include "primitives/pureheader.h"
+#include "primitives/pureheader.cpp"
 #include "chainparamsbase.h"
 #include "chainparamsbase.cpp"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/leveldb/include/leveldb/db.h"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/primitives/transaction.h"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/primitives/transaction.cpp"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/primitives/block.h"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/primitives/block.cpp"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/txdb.h"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/txdb.cpp"
-#include "coins.h"
-#include "coins.cpp"
-#include "compressor.h"
-#include "compressor.cpp"
-#include "pubkey.h"
-#include "pubkey.cpp"
-#include "secp256k1.h"
-#include "secp256k1_recovery.h"
-#include "hash.h"
-#include "hash.cpp"
-#include "script/standard.h"
-#include "script/standard.cpp"
-#include "base58.h"
-#include "base58.cpp"
-#include "chainparams.h"
-#include "chainparams.cpp"
-#include "chainparamsbase.h"
-#include "chainparamsbase.cpp"
-#include "consensus/merkle.h"
-#include "consensus/merkle.cpp"
-#include "key.h"
-#include "key.cpp"
 
-#include "/home/blockchain/leveldbview/bitcoin-master/src/secp256k1/src/secp256k1.c"
-#include "/home/blockchain/leveldbview/bitcoin-master/src/secp256k1/src/modules/recovery/main_impl.h"
+#include "zcash/IncrementalMerkleTree.cpp"
+#include "zcash/IncrementalMerkleTree.hpp"
+#include "zcash/NoteEncryption.cpp"
+#include "zcash/NoteEncryption.hpp"
+#include "zcash/Note.cpp"
+#include "zcash/Note.hpp"
+#include "zcash/util.cpp"
+#include "zcash/prf.cpp"
+
+#include "secp256k1/src/secp256k1.c"
+#include "secp256k1/src/modules/recovery/main_impl.h"
+
+#include "sodium.h"
+
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -71,9 +61,7 @@
 #include <stdlib.h> 
 #include <stdio.h>
 
-#include <boost/date_time/time_parsing>
-
-#include <sqlite3.h>
+#include <boost/date_time/time_parsing.hpp>
 
 int main(int argc, char* argv[]) {
 
@@ -89,25 +77,27 @@ int main(int argc, char* argv[]) {
     // txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     
         /* Open LEVELDB database */
-    const std::string PATH = "/btc/478558_A_1460";
+    const std::string PATH = "/btc/478558_Z";
 	
-	CDBWrapper db(PATH, 1024*64, false, false, true);
+	CLevelDBWrapper db(PATH, 1024*64, false, false);
 	
-	static const char DB_COIN = 'C';
+	static const char DB_COINS = 'c';
     static const char DB_BEST_BLOCK = 'B';
     
-    COutPoint inner_key;
-	CoinEntry key(&inner_key);
-	Coin value;
-	std::unique_ptr<CDBIterator> iter(db.NewIterator());
-    iter->Seek(DB_COIN);
-
-    while (iter->Valid()) {        
-		iter->GetKey(key);
-		iter->GetValue(value);
-        txNew.vout[inner_key.n] = value.out;
-        iter->Next();
-    }
+    uint256 hashBestChain;
+	db.Read(DB_BEST_BLOCK, hashBestChain);
+    
+    uint256 txid;
+	CCoins coins;
+    
+    txid.SetHex("7c239ae5d5888bd66d60a6daf5fc0cb98ebca41aad2cb13839af1aa232b5f953");
+    
+    db.Read(std::make_pair(DB_COINS, txid),coins);
+    
+    std::cout << hashBestChain.ToString() << "\n";
+    std::cout << txid.ToString() << "\n";
+    
+    txNew.vout = coins.vout;
     
     genesis.vtx.push_back(txNew);
     genesis.hashPrevBlock.SetNull();
@@ -116,16 +106,9 @@ int main(int argc, char* argv[]) {
     genesis.nBits    = 0x1f07ffff;
     genesis.nNonce   = 0;
 	uint256 genesisHash = genesis.GetHash();
-    uint256 txHash = genesis.vtx[0]->GetHash();    
+    uint256 txHash = genesis.vtx[0].GetHash();    
     std::cout << genesisHash.ToString() << "\n";
     std::cout << txHash.ToString() << "\n";
-    
-    std::string hbc;
-	uint256 hashBestChain;
-	db.Read(DB_BEST_BLOCK, hashBestChain);
-	hbc = hashBestChain.ToString();
-	std::cout << hbc << "\n";
-    std::cout << inner_key.hash.ToString() << "\n";
     
     return 0;
 }

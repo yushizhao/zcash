@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
     std::cout << txHash.ToString() << "\n";
     
     /* Open LEVELDB database */
-    const std::string PATH = "/btc/478558_Z";
+    const std::string PATH = "/btc/478558_Z_backup";
 	
 	CLevelDBWrapper db(PATH, 1024*64, false, true);
 	
