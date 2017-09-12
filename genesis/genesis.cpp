@@ -4,11 +4,54 @@
 #include "uint256.cpp"
 #include "coins.h"
 #include "coins.cpp"
-
+#include "util.h"
+#include "util.cpp"
+#include "utiltime.h"
+#include "utiltime.cpp"
+#include "utilstrencodings.cpp"
+#include "utilstrencodings.h"
+#include "random.h"
+#include "random.cpp"
+#include "compressor.h"
+#include "compressor.cpp"
+#include "hash.h"
+#include "hash.cpp"
+#include "pubkey.h"
+#include "pubkey.cpp"
+#include "script/script.h"
+#include "script/script.cpp"
+#include "support/cleanse.h"
+#include "support/cleanse.cpp"
+#include "crypto/sha256.h"
+#include "crypto/sha256.cpp"
+#include "crypto/ripemd160.h"
+#include "crypto/ripemd160.cpp"
+#include "crypto/sha512.h"
+#include "crypto/sha512.cpp"
+#include "crypto/hmac_sha512.h"
+#include "crypto/hmac_sha512.cpp"
 #include "primitives/transaction.h"
 #include "primitives/transaction.cpp"
 #include "primitives/block.h"
 #include "primitives/block.cpp"
+#include "primitives/pureheader.h"
+#include "primitives/pureheader.cpp"
+#include "chainparamsbase.h"
+#include "chainparamsbase.cpp"
+
+#include "zcash/IncrementalMerkleTree.cpp"
+#include "zcash/IncrementalMerkleTree.hpp"
+#include "zcash/NoteEncryption.cpp"
+#include "zcash/NoteEncryption.hpp"
+#include "zcash/Note.cpp"
+#include "zcash/Note.hpp"
+#include "zcash/util.cpp"
+#include "zcash/prf.cpp"
+
+#include "secp256k1/src/secp256k1.c"
+#include "secp256k1/src/modules/recovery/main_impl.h"
+
+#include "sodium.h"
 
 #include <iostream>
 #include <fstream>
@@ -16,10 +59,10 @@
 #include <stdint.h>
 #include <string>
 #include <stdlib.h> 
+#include <stdio.h>
 
+#include <boost/date_time/time_parsing.hpp>
 #include <sqlite3.h>
-
-#define HAVE_ENDIAN_H
 
 static int callback(void *txNew, int argc, char **argv, char **azColName){
     CMutableTransaction* tx = (CMutableTransaction*)txNew;

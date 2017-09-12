@@ -54,6 +54,8 @@
 #include "base58.cpp"
 #include "chainparams.h"
 #include "chainparams.cpp"
+#include "chainparamsbase.h"
+#include "chainparamsbase.cpp"
 #include "consensus/merkle.h"
 #include "consensus/merkle.cpp"
 #include "key.h"
@@ -67,6 +69,9 @@
 #include <stdint.h>
 #include <string>
 #include <stdlib.h> 
+#include <stdio.h>
+
+#include <boost/date_time/time_parsing>
 
 #include <sqlite3.h>
 
