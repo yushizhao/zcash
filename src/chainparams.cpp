@@ -75,7 +75,7 @@ public:
         genesis.nTime    = 1477641360;
         genesis.nBits    = 0x1f07ffff;
         genesis.nNonce   = 0;        
-        genesis.hashMerkleRoot = uint256S("0x7c239ae5d5888bd66d60a6daf5fc0cb98ebca41aad2cb13839af1aa232b5f953")
+        genesis.hashMerkleRoot = uint256S("0x7c239ae5d5888bd66d60a6daf5fc0cb98ebca41aad2cb13839af1aa232b5f953");
         consensus.hashGenesisBlock = uint256S("0xd0a2116a32a88a6393a1f6ce9d61ceb9fbe366f828cfdf785b662b481d550795");
             
         vFixedSeeds.clear();
