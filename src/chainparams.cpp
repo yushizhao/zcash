@@ -68,53 +68,16 @@ public:
          * >>> from pyblake2 import blake2s
          * >>> 'Zcash' + blake2s(b'The Economist 2016-10-29 Known unknown: Another crypto-currency is born. BTC#436254 0000000000000000044f321997f336d2908cf8c8d6893e88dbf067e2d949487d ETH#2521903 483039a6b6bd8bd05f0584f9a078d075e454925eb71c1f13eaff59b405a721bb DJIA close on 27 Oct 2016: 18,169.68').hexdigest()
          */
-        genesis.SetNull();
-        
-        const char* pszTimestamp = "Zcash0b9c4eef8b7cc417ee5001e3500984b6fea35683a7cac141a043c42064835d34";
-        CMutableTransaction txNew;
-        txNew.vin.resize(1);
-        txNew.vout.resize(1+16529043);
-        txNew.vin[0].scriptSig = CScript() << 520617983 << CScriptNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        
-        /* Open LEVELDB database */
-        const std::string PATH = "/btc/478558_A_1460";
-        
-        CLevelDBWrapper db(PATH, 1024*64, false, false, true);
-        
-        // static const char DB_COIN = 'C';
-        // static const char DB_BEST_BLOCK = 'B';
-        
-        COutPoint inner_key;
-        CoinEntry key(&inner_key);
-        Coin value;
-        std::unique_ptr<CDBIterator> iter(db.NewIterator());
-        iter->Seek(DB_COIN);
-
-        while (iter->Valid()) {        
-            iter->GetKey(key);
-            iter->GetValue(value);
-            txNew.vout[inner_key.n] = value.out;
-            iter->Next();
-        }
-        
-        
-        genesis.vtx.push_back(txNew);
+        genesis.SetNull();        
         genesis.hashPrevBlock.SetNull();
         genesis.hashMerkleRoot = genesis.BuildMerkleTree();
         genesis.nVersion = 4;
         genesis.nTime    = 1477641360;
         genesis.nBits    = 0x1f07ffff;
-        genesis.nNonce   = 0;       
-        consensus.hashGenesisBlock = genesis.GetHash();
-        
-        uint256 hashBestChain;
-        db.Read(DB_BEST_BLOCK, hashBestChain);
-    
-        // assert(consensus.hashGenesisBlock == uint256S("0x00040fe8ec8471911baa1db1266ea15dd06b4a8a5c453883c000b031973dce08"));
-        assert(consensus.hashGenesisBlock == hashBestChain.ToString());
-        // assert(genesis.hashMerkleRoot == uint256S("0xc4eaa58879081de3c24a7b117ed2b28300e7ec4c4c1dff1d3f1268b7857a4ddb"));
-        assert(genesis.hashMerkleRoot == inner_key.hash.ToString());
-        
+        genesis.nNonce   = 0;        
+        genesis.hashMerkleRoot = uint256S("0x7c239ae5d5888bd66d60a6daf5fc0cb98ebca41aad2cb13839af1aa232b5f953")
+        consensus.hashGenesisBlock = uint256S("0xd0a2116a32a88a6393a1f6ce9d61ceb9fbe366f828cfdf785b662b481d550795");
+            
         vFixedSeeds.clear();
         vSeeds.clear();
         // vSeeds.push_back(CDNSSeedData("z.cash", "dnsseed.z.cash")); // Zcash
@@ -143,18 +106,6 @@ public:
         fMineBlocksOnDemand = false;
         fTestnetToBeDeprecatedFieldRPC = false;
 
-        // checkpointData = (Checkpoints::CCheckpointData) {
-            // boost::assign::map_list_of
-            // (0, consensus.hashGenesisBlock)
-            // (2500, uint256S("0x00000006dc968f600be11a86cbfbf7feb61c7577f45caced2e82b6d261d19744"))
-            // (15000, uint256S("0x00000000b6bc56656812a5b8dcad69d6ad4446dec23b5ec456c18641fb5381ba"))
-            // (67500, uint256S("0x000000006b366d2c1649a6ebb4787ac2b39c422f451880bc922e3a6fbd723616")),
-            // 1487767578,     // * UNIX timestamp of last checkpoint block
-            // 325430,         // * total number of transactions between genesis and last checkpoint
-                              // (the tx=... number in the SetBestChain debug.log lines)
-            // 2777            // * estimated number of transactions per day after checkpoint
-                              // total number of tx / (checkpoint block height / (24 * 24))
-        // };
 	}	
 };
 static CMainParams mainParams;
@@ -185,7 +136,7 @@ public:
         genesis.nBits = 0x2007ffff;
         genesis.nNonce = 0;
         consensus.hashGenesisBlock = genesis.GetHash();
-        // assert(consensus.hashGenesisBlock == uint256S("0x05a60a92d99d85997cce3b87616c089f6124d7342af37106edc76126334a2c38"));
+        assert(consensus.hashGenesisBlock == uint256S("0x05a60a92d99d85997cce3b87616c089f6124d7342af37106edc76126334a2c38"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -250,7 +201,7 @@ public:
         genesis.nNonce = 0;
         consensus.hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 18344;
-        // assert(consensus.hashGenesisBlock == uint256S("0x029f11d80ef9765602235e1bc9727e3eb6ba20839319f761fee920d63401e327"));
+        assert(consensus.hashGenesisBlock == uint256S("0x029f11d80ef9765602235e1bc9727e3eb6ba20839319f761fee920d63401e327"));
         nPruneAfterHeight = 1000;
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
