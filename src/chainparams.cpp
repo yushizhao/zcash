@@ -141,7 +141,7 @@ public:
         genesis.nBits = 0x2007ffff;
         genesis.nNonce = 0;
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x05a60a92d99d85997cce3b87616c089f6124d7342af37106edc76126334a2c38"));
+        // assert(consensus.hashGenesisBlock == uint256S("0x05a60a92d99d85997cce3b87616c089f6124d7342af37106edc76126334a2c38"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -206,7 +206,7 @@ public:
         genesis.nNonce = 0;
         consensus.hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 18344;
-        assert(consensus.hashGenesisBlock == uint256S("0x029f11d80ef9765602235e1bc9727e3eb6ba20839319f761fee920d63401e327"));
+        // assert(consensus.hashGenesisBlock == uint256S("0x029f11d80ef9765602235e1bc9727e3eb6ba20839319f761fee920d63401e327"));
         nPruneAfterHeight = 1000;
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
