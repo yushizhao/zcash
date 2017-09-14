@@ -149,7 +149,11 @@ UniValue generate(const UniValue& params, bool fHelp)
     UniValue blockHashes(UniValue::VARR);
     while (nHeight < nHeightEnd)
     {
-        unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey));
+#ifdef ENABLE_WALLET
+        std::unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey));
+#else
+        std::unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey());
+#endif  
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Wallet keypool empty");
         CBlock *pblock = &pblocktemplate->block;
@@ -765,11 +769,11 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
 
     if (vNodes.empty() && !Params().MineBlocksOnDemand())
         throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED,
-                           "Dogecoin is not connected!");
+                           "BitcoinZero is not connected!");
 
     if (IsInitialBlockDownload() && !Params().MineBlocksOnDemand())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD,
-                           "Dogecoin is downloading blocks...");
+                           "BitcoinZero is downloading blocks...");
     
     /* The variables below are used to keep track of created and not yet
        submitted auxpow blocks.  Lock them, just in case.  In principle
