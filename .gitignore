@@ -113,3 +113,8 @@ libzcashconsensus.pc
 
 contrib/debian/files
 contrib/debian/substvars
+
+GTAGS
+GRTAGS
+GPATH
+GPATH
