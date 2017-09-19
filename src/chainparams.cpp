@@ -82,7 +82,17 @@ public:
         genesis.nNonce   = 0;        
         genesis.hashMerkleRoot = uint256S("0x7c239ae5d5888bd66d60a6daf5fc0cb98ebca41aad2cb13839af1aa232b5f953");
         consensus.hashGenesisBlock = uint256S("0xd0a2116a32a88a6393a1f6ce9d61ceb9fbe366f828cfdf785b662b481d550795");
-            
+        
+        //dummy or full
+        const char* pszTimestamp = "Zcash0b9c4eef8b7cc417ee5001e3500984b6fea35683a7cac141a043c42064835d34";
+        CMutableTransaction txNew;
+        txNew.vin.resize(1);
+        txNew.vout.resize(1);
+        txNew.vin[0].scriptSig = CScript() << 520617983 << CScriptNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+        txNew.vout[0].nValue = 0;
+        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+        genesis.vtx.push_back(txNew);
+
         vFixedSeeds.clear();
         vSeeds.clear();
         vSeeds.push_back(CDNSSeedData("z.cash", "dnsseed.z.cash")); // Zcash
@@ -270,15 +280,15 @@ public:
         consensus.nMajorityEnforceBlockUpgrade = 750;
         consensus.nMajorityRejectBlockOutdated = 950;
         consensus.nMajorityWindow = 1000;
-        consensus.powLimit = uint256S("0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f");
-        pchMessageStart[0] = 0xaa;
-        pchMessageStart[1] = 0xe8;
-        pchMessageStart[2] = 0x3f;
-        pchMessageStart[3] = 0x5f;
+        consensus.powLimit = uint256S("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        pchMessageStart[0] = 0xfa;
+        pchMessageStart[1] = 0xbf;
+        pchMessageStart[2] = 0xb5;
+        pchMessageStart[3] = 0xda;
         nMaxTipAge = 24 * 60 * 60;
         genesis.nTime = 1296688602;
-        genesis.nBits = 0x200f0f0f;
-        genesis.nNonce = 0;
+        genesis.nBits = 0x207fffff;
+        genesis.nNonce = 2;
         consensus.hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 18344;
         // assert(consensus.hashGenesisBlock == uint256S("0x029f11d80ef9765602235e1bc9727e3eb6ba20839319f761fee920d63401e327"));
