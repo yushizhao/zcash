@@ -296,8 +296,8 @@ public:
         genesis.hashMerkleRoot = genesis.BuildMerkleTree();
         nDefaultPort = 18344;
 
-        // assert(genesis.hashMerkleRoot == uint256S("0x7c239ae5d5888bd66d60a6daf5fc0cb98ebca41aad2cb13839af1aa232b5f953"));
-        // assert(consensus.hashGenesisBlock == uint256S("0xd0a2116a32a88a6393a1f6ce9d61ceb9fbe366f828cfdf785b662b481d550795"));
+        a                                                                                      ssert(genesis.hashMerkleRoot == uint256S("eb9e8e6ff33de3e5aad6c64a33a6cb6ee80574d6ddc29f6db5f7e434c49cece4"));
+        assert(consensus.hashGenesisBlock == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));
         
         nPruneAfterHeight = 1000;
 
