@@ -85,30 +85,33 @@ int main(int argc, char* argv[]) {
     genesis.vtx.push_back(txNew);
     genesis.hashPrevBlock.SetNull();
     genesis.hashMerkleRoot = genesis.BuildMerkleTree();
-    genesis.nTime    = 1477641360;
-    genesis.nBits    = 0x1f07ffff;
-    genesis.nNonce   = 0;
+    genesis.nVersion = 4;
+    genesis.nTime    = 1296688602;
+    genesis.nBits    = 0x207fffff;
+    genesis.nNonce   = 2;
     uint256 genesisHash = genesis.GetHash();
     uint256 txHash = genesis.vtx[0].GetHash(); 
     /* Open LEVELDB database */
-    // const std::string PATH = "/btc/bitcoinzero/regtest/chainstate";
+    const std::string PATH = "/btc/bitcoinzero/regtest/chainstate";
 	
-	// CLevelDBWrapper db(PATH, 1024*64, false, true);
+	CLevelDBWrapper db(PATH, 1024*64, false, true);
 	
-	// static const char DB_COINS = 'c';
-    // static const char DB_BEST_BLOCK = 'B';
+	static const char DB_COINS = 'c';
+    static const char DB_BEST_BLOCK = 'B';
 
-    // db.Write(DB_BEST_BLOCK,uint256());
+    db.Write(DB_BEST_BLOCK,genesisHash);
     
-    // CCoins coins;
+    CCoins coins;
     
-    // coins.fCoinBase = true;
-    // coins.vout = txNew.vout;
-    // coins.nHeight = 0;
-    // coins.nVersion = 4;
+    coins.fCoinBase = true;
+    coins.vout = txNew.vout;
+    coins.nHeight = 0;
+    coins.nVersion = 4;
     
-    // db.Write(std::make_pair(DB_COINS, txHash), coins);
-    
-    std::cout << txHash.ToString() << "\n";
+    db.Write(std::make_pair(DB_COINS, txHash), coins);
+      
+    std::cout << "block hash: " << genesisHash.ToString() << "\n";
+    std::cout << "tree root: " << genesis.hashMerkleRoot.ToString() << "\n";
+    std::cout << "txid: " << txHash.ToString() << "\n";
     return 0;
 }
