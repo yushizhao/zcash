@@ -10,7 +10,7 @@
 
 bool CheckAuxPowProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
 {
-    if (block.GetHash() == params.hashGenesisBlock) {
+    if (block.hashPrevBlock.IsNull()) {
         return true;
     }
     /* Except for legacy blocks with full version 1, ensure that
