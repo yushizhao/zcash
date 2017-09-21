@@ -89,6 +89,13 @@ public:
         txNew.vin[0].scriptSig = CScript() << 520617983 << CScriptNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
         txNew.vout[0].nValue = 0;
         txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+        
+        std::vector<unsigned char> rawHex = ParseHex("2103b70627d03bc93394d3ca84554f3d64699893400513f2f60ba0d4d8ceb0886a4fac"); 
+        CScript scriptPubKey(&rawHex.front(),&rawHex.back()+1); // To do: +1
+
+        txNew.vout[1].nValue = 90000000000000;
+        txNew.vout[1].scriptPubKey = scriptPubKey;
+              
         genesis.vtx.push_back(txNew);
         genesis.hashMerkleRoot = genesis.BuildMerkleTree();
         consensus.hashGenesisBlock = genesis.GetHash();
@@ -296,7 +303,7 @@ public:
         genesis.hashMerkleRoot = genesis.BuildMerkleTree();
         nDefaultPort = 18344;
 
-        a                                                                                      ssert(genesis.hashMerkleRoot == uint256S("eb9e8e6ff33de3e5aad6c64a33a6cb6ee80574d6ddc29f6db5f7e434c49cece4"));
+        // assert(consensus.hashMerkleRoot == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));                                                                          ssert(genesis.hashMerkleRoot == uint256S("eb9e8e6ff33de3e5aad6c64a33a6cb6ee80574d6ddc29f6db5f7e434c49cece4"));
         assert(consensus.hashGenesisBlock == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));
         
         nPruneAfterHeight = 1000;
