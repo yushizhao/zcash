@@ -607,7 +607,12 @@ void ThreadImport(std::vector<boost::filesystem::path> vImportFiles)
             if (!file)
                 break; // This error is logged in OpenBlockFile
             LogPrintf("Reindexing block file blk%05u.dat...\n", (unsigned int)nFile);
-            LoadExternalBlockFile(file, &pos);
+            if (nFile == 0) {
+                LogPrintf("BitcoinZero: Loading Genesis Block.\n");
+                LoadExternalGenesisBlockFile(file, &pos);
+            } else {
+                LoadExternalBlockFile(file, &pos);
+            }                
             nFile++;
         }
         pblocktree->WriteReindexing(false);

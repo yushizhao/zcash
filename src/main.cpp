@@ -3931,6 +3931,111 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
         LogPrintf("Loaded %i blocks from external file in %dms\n", nLoaded, GetTimeMillis() - nStart);
     return nLoaded > 0;
 }
+bool LoadExternalGenesisBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
+{
+    const CChainParams& chainparams = Params();
+    // Map of disk positions for blocks with unknown parent (only used for reindex)
+    static std::multimap<uint256, CDiskBlockPos> mapBlocksUnknownParent;
+    int64_t nStart = GetTimeMillis();
+
+    int nLoaded = 0;
+    try {
+        // This takes over fileIn and calls fclose() on it in the CBufferedFile destructor
+        CBufferedFile blkdat(fileIn, 600*1024*1024, 600*1024*1024, SER_DISK, CLIENT_VERSION);
+        uint64_t nRewind = blkdat.GetPos();
+        while (!blkdat.eof()) {
+            boost::this_thread::interruption_point();
+
+            blkdat.SetPos(nRewind);
+            nRewind++; // start one byte further next time, in case of failure
+            blkdat.SetLimit(); // remove former limit // really? Anyway?
+            unsigned int nSize = 0;
+            try {
+                // locate a header
+                unsigned char buf[MESSAGE_START_SIZE];
+                blkdat.FindByte(Params().MessageStart()[0]);
+                nRewind = blkdat.GetPos()+1;
+                blkdat >> FLATDATA(buf);
+                if (memcmp(buf, Params().MessageStart(), MESSAGE_START_SIZE))
+                    continue;
+                // read size
+                blkdat >> nSize;
+                LogPrintf("BitcoinZero: nSize = %d.\n", nSize);
+                if (nSize < 80)
+                    continue;
+            } catch (const std::exception&) {
+                // no valid block header found; don't complain
+                break;
+            }
+            try {
+                // read block
+                uint64_t nBlockPos = blkdat.GetPos();
+                if (dbp)
+                    dbp->nPos = nBlockPos;
+                blkdat.SetLimit(nBlockPos + nSize);
+                blkdat.SetPos(nBlockPos);
+                CBlock block;
+                blkdat >> block;
+                nRewind = blkdat.GetPos();
+
+                LogPrintf("We are here: 3981.\n");
+                // detect out of order blocks, and store them for later
+                uint256 hash = block.GetHash();
+                if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex.find(block.hashPrevBlock) == mapBlockIndex.end()) {
+                    LogPrint("reindex", "%s: Out of order block %s, parent %s not known\n", __func__, hash.ToString(),
+                            block.hashPrevBlock.ToString());
+                    if (dbp)
+                        mapBlocksUnknownParent.insert(std::make_pair(block.hashPrevBlock, *dbp));
+                    continue;
+                }
+
+                // process in case the block isn't known yet
+                if (mapBlockIndex.count(hash) == 0 || (mapBlockIndex[hash]->nStatus & BLOCK_HAVE_DATA) == 0) {
+                    CValidationState state;
+                    if (ProcessNewBlock(state, NULL, &block, true, dbp))
+                        nLoaded++;
+                    if (state.IsError())
+                        break;
+                } else if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex[hash]->nHeight % 1000 == 0) {
+                    LogPrintf("Block Import: already had block %s at height %d\n", hash.ToString(), mapBlockIndex[hash]->nHeight);
+                }
+
+                LogPrintf("We are here: 4003.\n");
+                // Recursively process earlier encountered successors of this block
+                deque<uint256> queue;
+                queue.push_back(hash);
+                while (!queue.empty()) {
+                    uint256 head = queue.front();
+                    queue.pop_front();
+                    std::pair<std::multimap<uint256, CDiskBlockPos>::iterator, std::multimap<uint256, CDiskBlockPos>::iterator> range = mapBlocksUnknownParent.equal_range(head);
+                    while (range.first != range.second) {
+                        std::multimap<uint256, CDiskBlockPos>::iterator it = range.first;
+                        if (ReadBlockFromDisk(block, it->second))
+                        {
+                            LogPrintf("%s: Processing out of order child %s of %s\n", __func__, block.GetHash().ToString(),
+                                    head.ToString());
+                            CValidationState dummy;
+                            if (ProcessNewBlock(dummy, NULL, &block, true, &it->second))
+                            {
+                                nLoaded++;
+                                queue.push_back(block.GetHash());
+                            }
+                        }
+                        range.first++;
+                        mapBlocksUnknownParent.erase(it);
+                    }
+                }
+            } catch (const std::exception& e) {
+                LogPrintf("%s: Deserialize or I/O error - %s\n", __func__, e.what());
+            }
+        }
+    } catch (const std::runtime_error& e) {
+        AbortNode(std::string("System error: ") + e.what());
+    }
+    if (nLoaded > 0)
+        LogPrintf("Loaded %i blocks from external file in %dms\n", nLoaded, GetTimeMillis() - nStart);
+    return nLoaded > 0;
+}
 
 void static CheckBlockIndex()
 {
