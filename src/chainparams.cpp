@@ -73,36 +73,8 @@ public:
          * >>> from pyblake2 import blake2s
          * >>> 'Zcash' + blake2s(b'The Economist 2016-10-29 Known unknown: Another crypto-currency is born. BTC#436254 0000000000000000044f321997f336d2908cf8c8d6893e88dbf067e2d949487d ETH#2521903 483039a6b6bd8bd05f0584f9a078d075e454925eb71c1f13eaff59b405a721bb DJIA close on 27 Oct 2016: 18,169.68').hexdigest()
          */
-/*         genesis.SetNull();        
-        genesis.hashPrevBlock.SetNull();
-        
-        genesis.nVersion = 4;
-        genesis.nTime    = 1477641360;
-        genesis.nBits    = 0x1f07ffff;
-        genesis.nNonce   = 0;  */       
-        
-        //dummy or full
-/*         const char* pszTimestamp = "Zcash0b9c4eef8b7cc417ee5001e3500984b6fea35683a7cac141a043c42064835d34";
-        CMutableTransaction txNew;
-        txNew.vin.resize(1);
-        txNew.vout.resize(2);
-        txNew.vin[0].scriptSig = CScript() << 520617983 << CScriptNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 0;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
-        
-        std::vector<unsigned char> rawHex = ParseHex("2103b70627d03bc93394d3ca84554f3d64699893400513f2f60ba0d4d8ceb0886a4fac"); 
-        CScript scriptPubKey(&rawHex.front(),&rawHex.back()+1); // To do: +1
 
-        txNew.vout[1].nValue = 90000000000000;
-        txNew.vout[1].scriptPubKey = scriptPubKey;
-              
-        genesis.vtx.push_back(txNew);
-        genesis.hashMerkleRoot = genesis.BuildMerkleTree();
-        consensus.hashGenesisBlock = genesis.GetHash();
- */
-        // assert(genesis.hashMerkleRoot == uint256S("0x7c239ae5d5888bd66d60a6daf5fc0cb98ebca41aad2cb13839af1aa232b5f953"));
-        // assert(consensus.hashGenesisBlock == uint256S("0xd0a2116a32a88a6393a1f6ce9d61ceb9fbe366f828cfdf785b662b481d550795"));
-        consensus.hashGenesisBlock.SetHex("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70")
+        consensus.hashGenesisBlock.SetHex("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70");
         
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -301,9 +273,8 @@ public:
         genesis.nBits = 0x207fffff;
         genesis.nNonce = 2;
         consensus.hashGenesisBlock = genesis.GetHash();
-        genesis.hashMerkleRoot = genesis.BuildMerkleTree();
         nDefaultPort = 18344;
-
+        consensus.hashGenesisBlock.SetHex("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70");
         // assert(consensus.hashMerkleRoot == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));                                                                          ssert(genesis.hashMerkleRoot == uint256S("eb9e8e6ff33de3e5aad6c64a33a6cb6ee80574d6ddc29f6db5f7e434c49cece4"));
         assert(consensus.hashGenesisBlock == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));
         

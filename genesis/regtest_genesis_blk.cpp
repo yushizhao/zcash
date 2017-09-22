@@ -71,7 +71,7 @@
 
 boost::filesystem::path GetBlockPosFilename(const CDiskBlockPos &pos, const char *prefix)
 {
-    return "/home/suiqiu/blocks/blk00000.dat";
+    return "/home/suiqiu/regtest/blocks/blk00000.dat";
 }
 
 FILE* OpenDiskFile(const CDiskBlockPos &pos, const char *prefix, bool fReadOnly)
