@@ -38,6 +38,12 @@
 #include "primitives/pureheader.cpp"
 #include "chainparamsbase.h"
 #include "chainparamsbase.cpp"
+#include "chain.h"
+#include "chain.cpp"
+#include "protocol.h"
+#include "protocol.cpp"
+#include "netbase.h"
+#include "netbase.cpp"
 
 #include "zcash/IncrementalMerkleTree.cpp"
 #include "zcash/IncrementalMerkleTree.hpp"
@@ -63,10 +69,62 @@
 
 #include <boost/date_time/time_parsing.hpp>
 
+boost::filesystem::path GetBlockPosFilename(const CDiskBlockPos &pos, const char *prefix)
+{
+    return "/home/suiqiu/blocks/blk00000.dat";
+}
+
+FILE* OpenDiskFile(const CDiskBlockPos &pos, const char *prefix, bool fReadOnly)
+{
+    if (pos.IsNull())
+        return NULL;
+    boost::filesystem::path path = GetBlockPosFilename(pos, prefix);
+    boost::filesystem::create_directories(path.parent_path());
+    FILE* file = fopen(path.string().c_str(), "rb+");
+    if (!file && !fReadOnly)
+        file = fopen(path.string().c_str(), "wb+");
+    if (!file) {
+        LogPrintf("Unable to open file %s\n", path.string());
+        return NULL;
+    }
+    if (pos.nPos) {
+        if (fseek(file, pos.nPos, SEEK_SET)) {
+            LogPrintf("Unable to seek to position %u of %s\n", pos.nPos, path.string());
+            fclose(file);
+            return NULL;
+        }
+    }
+    return file;
+}
+
+FILE* OpenBlockFile(const CDiskBlockPos &pos, bool fReadOnly) {
+    return OpenDiskFile(pos, "blk", fReadOnly);
+}
+
+bool WriteBlockToDisk(CBlock& block, CDiskBlockPos& pos, const CMessageHeader::MessageStartChars& messageStart)
+{
+    // Open history file to append
+    CAutoFile fileout(OpenBlockFile(pos), SER_DISK, CLIENT_VERSION);
+    if (fileout.IsNull())
+        return error("WriteBlockToDisk: OpenBlockFile failed");
+
+    // Write index header
+    unsigned int nSize = fileout.GetSerializeSize(block);
+    fileout << FLATDATA(messageStart) << nSize;
+
+    // Write block
+    long fileOutPos = ftell(fileout.Get());
+    if (fileOutPos < 0)
+        return error("WriteBlockToDisk: ftell failed");
+    pos.nPos = (unsigned int)fileOutPos;
+    fileout << block;
+
+    return true;
+}
+
 int main(int argc, char* argv[]) {
 
     CBlock genesis;
-    
     const char* pszTimestamp = "Zcash0b9c4eef8b7cc417ee5001e3500984b6fea35683a7cac141a043c42064835d34";
     
     CMutableTransaction txNew;
@@ -100,14 +158,28 @@ int main(int argc, char* argv[]) {
     genesis.vtx.push_back(txNew);
     genesis.hashPrevBlock.SetNull();
     genesis.hashMerkleRoot = genesis.BuildMerkleTree();
+    // genesis.nVersion = 4;
     genesis.nTime    = 1477641360;
     genesis.nBits    = 0x1f07ffff;
     genesis.nNonce   = 0;
-	uint256 genesisHash = genesis.GetHash();
-    uint256 txHash = genesis.vtx[0].GetHash();    
-    std::cout << genesisHash.ToString() << "\n";
-    //d0a2116a32a88a6393a1f6ce9d61ceb9fbe366f828cfdf785b662b481d550795
-    std::cout << txHash.ToString() << "\n";
+    uint256 genesisHash = genesis.GetHash();
+    uint256 txHash = genesis.vtx[0].GetHash(); 
     
+    CDiskBlockPos blockPos;
+    blockPos.nFile = 0;
+    
+    CMessageHeader::MessageStartChars pchMessageStart;
+    //for main net
+    pchMessageStart[0] = 0x24;
+    pchMessageStart[1] = 0xe9;
+    pchMessageStart[2] = 0x27;
+    pchMessageStart[3] = 0x64;
+    
+    WriteBlockToDisk(genesis, blockPos, pchMessageStart);
+    
+      
+    std::cout << "block hash: " << genesisHash.ToString() << "\n";
+    std::cout << "tree root: " << genesis.hashMerkleRoot.ToString() << "\n";
+    std::cout << "txid: " << txHash.ToString() << "\n";
     return 0;
 }
