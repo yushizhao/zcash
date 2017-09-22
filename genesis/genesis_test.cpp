@@ -73,11 +73,9 @@ int main(int argc, char* argv[]) {
     txNew.vin.resize(1);
     txNew.vout.resize(1+16529043);
     txNew.vin[0].scriptSig = CScript() << 520617983 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-    // txNew.vout[0].nValue = 0;
-    // txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     
         /* Open LEVELDB database */
-    const std::string PATH = "/btc/478558_Z";
+    const std::string PATH = "/home/chainstate";
 	
 	CLevelDBWrapper db(PATH, 1024*64, false, false);
 	
