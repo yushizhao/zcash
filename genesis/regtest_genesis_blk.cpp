@@ -130,16 +130,22 @@ int main(int argc, char* argv[]) {
     
     CMutableTransaction txNew;
     txNew.vin.resize(1);
-    txNew.vout.resize(2);
+    txNew.vout.resize(3);
     txNew.vin[0].scriptSig = CScript() << 520617983 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
     txNew.vout[0].nValue = 0;
     txNew.vout[0].scriptPubKey = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     
     std::vector<unsigned char> rawHex = ParseHex("2103b70627d03bc93394d3ca84554f3d64699893400513f2f60ba0d4d8ceb0886a4fac"); 
-	CScript scriptPubKey(&rawHex.front(),&rawHex.back()+1); // To do: +1
+	CScript scriptPubKey_multisig(&rawHex.front(),&rawHex.back()+1); // To do: +1
 
     txNew.vout[1].nValue = 90000000000000;
-    txNew.vout[1].scriptPubKey = scriptPubKey;
+    txNew.vout[1].scriptPubKey = scriptPubKey_multisig;
+    
+    rawHex = ParseHex("a914693403fbadf7b19e149e8b527b01dfb72438abac87"); 
+	CScript scriptPubKey(&rawHex.front(),&rawHex.back()+1); // To do: +1
+
+    txNew.vout[2].nValue = 8000000000000;
+    txNew.vout[2].scriptPubKey = scriptPubKey;    
     
     genesis.vtx.push_back(txNew);
     genesis.hashPrevBlock.SetNull();

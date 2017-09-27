@@ -274,7 +274,7 @@ public:
         genesis.nNonce = 2;
         consensus.hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 18344;
-        consensus.hashGenesisBlock.SetHex("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70");
+        consensus.hashGenesisBlock.SetHex("105f2273c14d1e0217d159f191ec812cf763da1a05a0afc70dd81502f7bdd12c");
         // assert(consensus.hashMerkleRoot == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));                                                                          ssert(genesis.hashMerkleRoot == uint256S("eb9e8e6ff33de3e5aad6c64a33a6cb6ee80574d6ddc29f6db5f7e434c49cece4"));
         // assert(consensus.hashGenesisBlock == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));
         
