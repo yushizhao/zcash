@@ -2151,7 +2151,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         // match what we asked for.
         assert(tree.root() == old_tree_root);
     }
-
+   
     for (unsigned int i = 0; i < block.vtx.size(); i++)
     {
         const CTransaction &tx = block.vtx[i];
@@ -2177,7 +2177,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             // this is to prevent a "rogue miner" from creating
             // an incredibly-expensive-to-validate block.
             nSigOps += GetP2SHSigOpCount(tx, view);
-            if (nSigOps > MAX_BLOCK_SIGOPS)
+            if (nSigOps > MAX_BLOCK_SIGOPS && pindex->pprev != NULL)
                 return state.DoS(100, error("ConnectBlock(): too many sigops"),
                                  REJECT_INVALID, "bad-blk-sigops");
 
@@ -2206,6 +2206,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         vPos.push_back(std::make_pair(tx.GetHash(), pos));
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
     }
+    
 
     view.PushAnchor(tree);
     if (!fJustCheck) {
@@ -3941,7 +3942,7 @@ bool LoadExternalGenesisBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
     int nLoaded = 0;
     try {
         // This takes over fileIn and calls fclose() on it in the CBufferedFile destructor
-        CBufferedFile blkdat(fileIn, 600*1024*1024, 600*1024*1024, SER_DISK, CLIENT_VERSION);
+        CBufferedFile blkdat(fileIn, 600*1024*1024, MAX_BLOCK_SIZE+8, SER_DISK, CLIENT_VERSION);
         uint64_t nRewind = blkdat.GetPos();
         while (!blkdat.eof()) {
             boost::this_thread::interruption_point();
@@ -3960,7 +3961,7 @@ bool LoadExternalGenesisBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
                     continue;
                 // read size
                 blkdat >> nSize;
-                LogPrintf("BitcoinZero: nSize = %d.\n", nSize);
+                LogPrintf("BitcoinZero: Genesis nSize = %d.\n", nSize);
                 if (nSize < 80)
                     continue;
             } catch (const std::exception&) {
@@ -3973,12 +3974,10 @@ bool LoadExternalGenesisBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
                 if (dbp)
                     dbp->nPos = nBlockPos;
                 blkdat.SetLimit(nBlockPos + nSize);
-                blkdat.SetPos(nBlockPos);
                 CBlock block;
                 blkdat >> block;
                 nRewind = blkdat.GetPos();
-
-                LogPrintf("We are here: 3981.\n");
+                
                 // detect out of order blocks, and store them for later
                 uint256 hash = block.GetHash();
                 if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex.find(block.hashPrevBlock) == mapBlockIndex.end()) {
@@ -4000,7 +3999,6 @@ bool LoadExternalGenesisBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
                     LogPrintf("Block Import: already had block %s at height %d\n", hash.ToString(), mapBlockIndex[hash]->nHeight);
                 }
 
-                LogPrintf("We are here: 4003.\n");
                 // Recursively process earlier encountered successors of this block
                 deque<uint256> queue;
                 queue.push_back(hash);

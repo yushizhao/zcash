@@ -74,7 +74,7 @@ public:
          * >>> 'Zcash' + blake2s(b'The Economist 2016-10-29 Known unknown: Another crypto-currency is born. BTC#436254 0000000000000000044f321997f336d2908cf8c8d6893e88dbf067e2d949487d ETH#2521903 483039a6b6bd8bd05f0584f9a078d075e454925eb71c1f13eaff59b405a721bb DJIA close on 27 Oct 2016: 18,169.68').hexdigest()
          */
 
-        consensus.hashGenesisBlock.SetHex("d0a2116a32a88a6393a1f6ce9d61ceb9fbe366f828cfdf785b662b481d550795");
+        consensus.hashGenesisBlock.SetHex("ff6257b4859309c57766c10ce97900757489bf37fe2c561687805dbd47fa6dc9");
         
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -276,7 +276,7 @@ public:
         nDefaultPort = 18344;
         consensus.hashGenesisBlock.SetHex("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70");
         // assert(consensus.hashMerkleRoot == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));                                                                          ssert(genesis.hashMerkleRoot == uint256S("eb9e8e6ff33de3e5aad6c64a33a6cb6ee80574d6ddc29f6db5f7e434c49cece4"));
-        assert(consensus.hashGenesisBlock == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));
+        // assert(consensus.hashGenesisBlock == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));
         
         nPruneAfterHeight = 1000;
 

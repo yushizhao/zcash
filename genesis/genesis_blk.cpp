@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
     genesis.vtx.push_back(txNew);
     genesis.hashPrevBlock.SetNull();
     genesis.hashMerkleRoot = genesis.BuildMerkleTree();
-    // genesis.nVersion = 4;
+    genesis.nVersion = 4;
     genesis.nTime    = 1477641360;
     genesis.nBits    = 0x1f07ffff;
     genesis.nNonce   = 0;
@@ -179,6 +179,7 @@ int main(int argc, char* argv[]) {
     
       
     std::cout << "block hash: " << genesisHash.ToString() << "\n";
+    //ff6257b4859309c57766c10ce97900757489bf37fe2c561687805dbd47fa6dc9
     std::cout << "tree root: " << genesis.hashMerkleRoot.ToString() << "\n";
     std::cout << "txid: " << txHash.ToString() << "\n";
     return 0;
