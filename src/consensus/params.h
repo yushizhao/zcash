@@ -17,7 +17,8 @@ struct Params {
 	bool fCoinbaseMustBeProtected;
     int nSubsidyHalvingInterval;
     int GetLastFoundersRewardBlockHeight() const {
-        return nSubsidyHalvingInterval - 1;
+        //until next SubsidyHalving
+        return -478558*4 + 3*nSubsidyHalvingInterval - 1;
     }    
     /** Used to check majorities for block version upgrade */
     int nMajorityEnforceBlockUpgrade;
