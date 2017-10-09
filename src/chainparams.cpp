@@ -60,8 +60,6 @@ public:
         nMaxTipAge = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
 		
-        consensus.nAuxpowChainId = 0x0062; // 98 - Josh Wise!
-        consensus.fStrictChainId = true;
         consensus.fAllowLegacyBlocks = false;
         consensus.fAllowAuxPow = true;
         

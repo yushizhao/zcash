@@ -146,7 +146,7 @@ public:
    * @param params Consensus parameters.
    * @return True if the auxpow is valid.
    */
-    bool check(const uint256& hashAuxBlock, int nChainId, const Consensus::Params& params) const;
+    bool check(const uint256& hashAuxBlock, const Consensus::Params& params) const;
 
     /**
    * Get the parent block's hash.  This is used to verify that it
@@ -170,16 +170,7 @@ public:
     {
         return parentBlock;
     }
-
-    /**
-   * Calculate the expected index in the merkle tree.  This is also used
-   * for the test-suite.
-   * @param nNonce The coinbase's nonce value.
-   * @param nChainId The chain ID.
-   * @param h The merkle block height.
-   * @return The expected index for the aux hash.
-   */
-    static int getExpectedIndex(int nNonce, int nChainId, unsigned h);
+    
 };
 
 #endif // BITCOIN_AUXPOW_H
