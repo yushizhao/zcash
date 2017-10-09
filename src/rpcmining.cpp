@@ -749,7 +749,6 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
             "\nResult (without arguments):\n"
             "{\n"
             "  \"hash\"               (string) hash of the created block\n"
-            "  \"chainid\"            (numeric) chain ID for this block\n"
             "  \"previousblockhash\"  (string) hash of the previous block\n"
             "  \"coinbasevalue\"      (numeric) value of the block's coinbase\n"
             "  \"bits\"               (string) compressed target of the block\n"
