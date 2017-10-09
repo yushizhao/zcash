@@ -1448,6 +1448,10 @@ bool ReadBlockHeaderFromDisk(CBlockHeader& block, const CBlockIndex* pindex)
 
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 {
+    // reflect bitcoin 478558 chainstate's history. 
+    // 4 is the nSubsidyHalvingInterval ratio (zcash/bitcoin).
+    nHeight = nHeight + 478558*4;
+    
     int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
     // Force block reward to zero when right shift is undefined.
     if (halvings >= 64)
