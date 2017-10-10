@@ -142,7 +142,6 @@ public:
    * Note that this does not verify the actual PoW on the parent block!  It
    * just confirms that all the merkle branches are valid.
    * @param hashAuxBlock Hash of the merge-mined block.
-   * @param nChainId The auxpow chain ID of the block to check.
    * @param params Consensus parameters.
    * @return True if the auxpow is valid.
    */
