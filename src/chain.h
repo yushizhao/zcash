@@ -323,11 +323,9 @@ public:
         READWRITE(this->nVersion);
         READWRITE(hashPrev);
         READWRITE(hashMerkleRoot);
-        READWRITE(hashReserved);
         READWRITE(nTime);
         READWRITE(nBits);
-        READWRITE(nNonce);
-        READWRITE(nSolution);
+        READWRITE(nNonce);        
         READWRITE(hashBlockPoW);
         if (this->nVersion.IsAuxpow()) {
             if (ser_action.ForRead())
