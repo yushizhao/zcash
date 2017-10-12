@@ -736,7 +736,7 @@ UniValue estimatepriority(const UniValue& params, bool fHelp)
 #ifdef ENABLE_WALLET
 UniValue getauxblockbip22(const UniValue& params, bool fHelp)
 {
-    if (fHelp || (params.size() != 0 && params.size() != 2))
+    if (fHelp || (params.size() != 0 && params.size() != 7))
         throw std::runtime_error(
             "getauxblock (hash auxpow)\n"
             "\nCreate or submit a merge-mined block.\n"
@@ -853,7 +853,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
     /* Submit a block instead.  Note that this need not lock cs_main,
        since ProcessBlockFound below locks it instead.  */
 
-    assert(params.size() == 2);
+    assert(params.size() == 7);
     uint256 hash;
     hash.SetHex(params[0].get_str());
 
