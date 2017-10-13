@@ -854,6 +854,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
        since ProcessBlockFound below locks it instead.  */
 
     assert(params.size() == 7);
+
     uint256 hash;
     hash.SetHex(params[0].get_str());
 
@@ -862,10 +863,46 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "block hash unknown");
     CBlock& block = *mit->second;
 
-    const std::vector<unsigned char> vchAuxPow = ParseHex(params[1].get_str());
-    CDataStream ss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
-    CAuxPow pow;
-    ss >> pow;
+    const std::vector<unsigned char> vchheader = ParseHex(params[1].get_str());
+    CDataStream ssheader(vchheader, SER_GETHASH, PROTOCOL_VERSION);
+    CPureBlockHeader bitcoinHeader; 
+    ssheader >> bitcoinHeader;
+    
+    uint256 bitcoinHash = bitcoinHeader.GetHash();
+    
+    const std::vector<unsigned char> vchtx = ParseHex(params[2].get_str());
+    CDataStream sstx(vchheader, SER_GETHASH, PROTOCOL_VERSION);    
+    CTransaction bitcoinCoinbase;
+    sstx >> bitcoinCoinbase;
+    
+    UniValue txBranch = params[3].get_array();
+    std::vector<uint256> vMerkleBranch;
+    for (size_t idx = 0; idx < txBranch.size(); idx++) {
+        uint256 tmpHash;
+        tmpHash.SetHex(txBranch[idx].get_str());
+        vMerkleBranch.push_back(tmpHash);
+    }
+    
+    int nIndex = params[4].get_int();
+    
+    UniValue chainBranch = params[5].get_array();
+    std::vector<uint256> vChainMerkleBranch;
+    for (size_t idx = 0; idx < chainBranch.size(); idx++) {
+        uint256 tmpHash;
+        tmpHash.SetHex(chainBranch[idx].get_str());
+        vChainMerkleBranch.push_back(tmpHash);
+    }
+    
+    int nChainIndex = params[6].get_int();
+    
+    CAuxPow pow(bitcoinCoinbase);
+    pow.hashBlock = bitcoinHash;
+    pow.vMerkleBranch = vMerkleBranch;
+    pow.nIndex = nIndex;
+    pow.vChainMerkleBranch = vChainMerkleBranch;
+    pow.nChainIndex = nChainIndex;
+    pow.parentBlock = bitcoinHeader;
+
     block.SetAuxpow(new CAuxPow(pow));
     assert(block.GetHash() == hash);
 
