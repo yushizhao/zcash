@@ -871,7 +871,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
     uint256 bitcoinHash = bitcoinHeader.GetHash();
     
     const std::vector<unsigned char> vchtx = ParseHex(params[2].get_str());
-    CDataStream sstx(vchheader, SER_GETHASH, PROTOCOL_VERSION);    
+    CDataStream sstx(vchtx, SER_GETHASH, PROTOCOL_VERSION);    
     CTransaction bitcoinCoinbase;
     sstx >> bitcoinCoinbase;
     
