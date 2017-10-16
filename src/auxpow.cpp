@@ -8,6 +8,9 @@
 
 #include "auxpow.h"
 
+#include "hash.h"
+#include "primitives/transaction.h"
+
 #include "chainparams.h"
 #include "consensus/validation.h"
 #include "main.h"
@@ -101,6 +104,29 @@ bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectAbsurdFee)
     return ::AcceptToMemoryPool(mempool, state, *this, fLimitFree, NULL, fRejectAbsurdFee);
 }
 
+CPureTransaction::CPureTransaction() : nVersion(CTransaction::MIN_CURRENT_VERSION), nLockTime(0) {}
+
+uint256 CPureTransaction::GetHash() const
+{
+    return SerializeHash(*this);
+}
+
+std::string CPureTransaction::ToString() const
+{
+    std::string str;
+    str += strprintf("CPureTransaction(hash=%s, ver=%d, vin.size=%u, vout.size=%u, nLockTime=%u)\n",
+        GetHash().ToString().substr(0,10),
+        nVersion,
+        vin.size(),
+        vout.size(),
+        nLockTime);
+    for (unsigned int i = 0; i < vin.size(); i++)
+        str += "    " + vin[i].ToString() + "\n";
+    for (unsigned int i = 0; i < vout.size(); i++)
+        str += "    " + vout[i].ToString() + "\n";
+    return str;
+}
+
 /* ************************************************************************** */
 
 bool
@@ -115,49 +141,28 @@ CAuxPow::check(const uint256& hashAuxBlock, const Consensus::Params& params) con
     // Check that the chain merkle root is in the coinbase
     const uint256 nRootHash = CBlock::CheckMerkleBranch(hashAuxBlock, vChainMerkleBranch, nChainIndex);
     std::vector<unsigned char> vchRootHash(nRootHash.begin(), nRootHash.end());
-
+    std::reverse(vchRootHash.begin(), vchRootHash.end()); // correct endian
+    
     // Check that we are in the parent block merkle tree
-    if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != parentBlock.hashMerkleRoot)
+    if (CBlock::CheckMerkleBranch(coinbaseTx.GetHash(), vMerkleBranch, nIndex) != parentBlock.hashMerkleRoot)
         return error("Aux POW merkle root incorrect");
 
-    const CScript script = vin[0].scriptSig;
-
-    // Check that the same work is not submitted twice to our chain.
-    //
+    const CScript script = coinbaseTx.vin[0].scriptSig;
 
     CScript::const_iterator pcHead =
         std::search(script.begin(), script.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader));
 
+    if (pcHead == script.end())
+        return error("Aux POW missing MergedMiningHeader in parent coinbase");
+    
     CScript::const_iterator pc =
         std::search(script.begin(), script.end(), vchRootHash.begin(), vchRootHash.end());
 
     if (pc == script.end())
         return error("Aux POW missing chain merkle root in parent coinbase");
 
-    if (pcHead != script.end()) {
-        // Enforce only one chain merkle root by checking that a single instance of the merged
-        // mining header exists just before.
-        if (script.end() != std::search(pcHead + 1, script.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader)))
-            return error("Multiple merged mining headers in coinbase");
-        if (pcHead + sizeof(pchMergedMiningHeader) != pc)
-            return error("Merged mining header is not just before chain merkle root");
-    } else {
-        // For backward compatibility.
-        // Enforce only one chain merkle root by checking that it starts early in the coinbase.
-        // 8-12 bytes are enough to encode extraNonce and nBits.
-        if (pc - script.begin() > 20)
-            return error("Aux POW chain merkle root must start in the first 20 bytes of the parent coinbase");
-    }
-
-    pc += vchRootHash.size();
-    if (script.end() - pc < 8)
-        return error("Aux POW missing chain merkle tree size and nonce in parent coinbase");
-
-    int nSize;
-    memcpy(&nSize, &pc[0], 4);
-    const unsigned merkleHeight = vChainMerkleBranch.size();
-    if (nSize != (1 << merkleHeight))
-        return error("Aux POW merkle branch size does not match parent coinbase");
-
+    if (pcHead + sizeof(pchMergedMiningHeader) != pc)
+        return error("Merged mining header is not just before chain merkle root");    
+    
     return true;
 }

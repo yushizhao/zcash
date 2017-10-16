@@ -866,13 +866,11 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
     const std::vector<unsigned char> vchheader = ParseHex(params[1].get_str());
     CDataStream ssheader(vchheader, SER_GETHASH, PROTOCOL_VERSION);
     CPureBlockHeader bitcoinHeader; 
-    ssheader >> bitcoinHeader;
-    
-    uint256 bitcoinHash = bitcoinHeader.GetHash();
+    ssheader >> bitcoinHeader;    
     
     const std::vector<unsigned char> vchtx = ParseHex(params[2].get_str());
     CDataStream sstx(vchtx, SER_GETHASH, PROTOCOL_VERSION);    
-    CTransaction bitcoinCoinbase;
+    CPureTransaction bitcoinCoinbase;
     sstx >> bitcoinCoinbase;
     
     UniValue txBranch = params[3].get_array();
@@ -895,8 +893,8 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
     
     int nChainIndex = params[6].get_int();
     
-    CAuxPow pow(bitcoinCoinbase);
-    pow.hashBlock = bitcoinHash;
+    CAuxPow pow;
+    pow.coinbaseTx = bitcoinCoinbase;
     pow.vMerkleBranch = vMerkleBranch;
     pow.nIndex = nIndex;
     pow.vChainMerkleBranch = vChainMerkleBranch;

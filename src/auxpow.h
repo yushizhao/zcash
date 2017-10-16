@@ -21,8 +21,8 @@ class CBlockIndex;
 /** Header for merge-mining data in the coinbase.  */
 static const unsigned char pchMergedMiningHeader[] = {0xfa, 0xbe, 'm', 'm'};
 
-/* Because it is needed for auxpow, the definition of CMerkleTx is moved
-   here from wallet.h.  */
+/* Because it is needed for auxpow //Well, not really., the definition of CMerkleTx is moved
+   here from wallet.h. */
 
 /** A transaction with a merkle branch linking it to the block chain. */
 class CMerkleTx : public CTransaction
@@ -92,36 +92,55 @@ public:
     bool AcceptToMemoryPool(bool fLimitFree = true, bool fRejectAbsurdFee = true);
 };
 
-/**
- * Data for the merge-mining auxpow.  This is a merkle tx (the parent block's
- * coinbase tx) that can be verified to be in the parent block, and this
- * transaction's input (the coinbase script) contains the reference
- * to the actual merge-mined block.
- */
-class CAuxPow : public CMerkleTx
+/**bitcoin::CMutableTransaction**/
+struct CPureTransaction
 {
-    /* Public for the unit tests.  */
+    int32_t nVersion;
+    std::vector<CTxIn> vin;
+    std::vector<CTxOut> vout;
+    uint32_t nLockTime;
+
+    CPureTransaction();
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(this->nVersion);
+        nVersion = this->nVersion;
+        READWRITE(vin);
+        READWRITE(vout);
+        READWRITE(nLockTime);
+    }
+
+    /** Compute the hash of this CMutableTransaction. This is computed on the
+     * fly, as opposed to GetHash() in CTransaction, which uses a cached result.
+     */
+    uint256 GetHash() const;
+    
+    /**for debug**/
+    std::string ToString() const;
+};
+
+class CAuxPow
+{
+    
 public:
     /** The merkle branch connecting the aux block to our coinbase.  */
     std::vector<uint256> vChainMerkleBranch;
+    std::vector<uint256> vMerkleBranch;
 
     /** Merkle tree index of the aux block header in the coinbase.  */
     int nChainIndex;
+    int nIndex;
 
     /** Parent block header (on which the real PoW is done).  */
     CPureBlockHeader parentBlock;
+    CPureTransaction coinbaseTx;
+    
 
 public:
-    /* Prevent accidental conversion.  */
-    inline explicit CAuxPow(const CTransaction& txIn)
-        : CMerkleTx(txIn)
-    {
-    }
-
-    inline CAuxPow()
-        : CMerkleTx()
-    {
-    }
+    CAuxPow();
 
     ADD_SERIALIZE_METHODS;
 
@@ -129,9 +148,9 @@ public:
     inline void
     SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
     {
-        READWRITE(*static_cast<CMerkleTx*>(this));
-        nVersion = this->nVersion;
-
+        READWRITE(coinbaseTx);        
+        READWRITE(vMerkleBranch);
+        READWRITE(nIndex);       
         READWRITE(vChainMerkleBranch);
         READWRITE(nChainIndex);
         READWRITE(parentBlock);
@@ -157,19 +176,6 @@ public:
     {
         return parentBlock.GetPoWHash();
     }
-
-    /**
-   * Return parent block.  This is only used for the temporary parentblock
-   * auxpow version check.
-   * @return The parent block.
-   */
-    /* FIXME: Remove after the hardfork.  */
-    inline const CPureBlockHeader&
-    getParentBlock() const
-    {
-        return parentBlock;
-    }
-    
 };
 
 #endif // BITCOIN_AUXPOW_H
