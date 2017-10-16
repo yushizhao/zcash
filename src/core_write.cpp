@@ -5,6 +5,7 @@
 #include "core_io.h"
 
 #include "base58.h"
+#include "auxpow.h"
 #include "primitives/transaction.h"
 #include "script/script.h"
 #include "script/standard.h"
@@ -55,6 +56,13 @@ string FormatScript(const CScript& script)
 }
 
 string EncodeHexTx(const CTransaction& tx)
+{
+    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+    ssTx << tx;
+    return HexStr(ssTx.begin(), ssTx.end());
+}
+
+string EncodeHexPureTx(const CPureTransaction& tx)
 {
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
     ssTx << tx;
