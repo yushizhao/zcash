@@ -11,7 +11,6 @@
 #include "sync.h"
 #include "util.h"
 #include "core_io.h"
-#include "dogecoin.h"
 
 #include <stdint.h>
 

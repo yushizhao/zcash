@@ -126,8 +126,6 @@ BITCOIN_CORE_H = \
   core_io.h \
   core_memusage.h \
   deprecation.h \
-  dogecoin.cpp \
-  dogecoin.h \
   hash.h \
   httprpc.h \
   httpserver.h \
