@@ -744,7 +744,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
             "auxpow for a previously returned block.\n"
             "\nArguments:\n"
             "1. \"hash\"    (string, optional) hash of the block to submit\n"
-            "2. \"auxpow\"  (string, optional) auxpow found\n"
+            "2. \"auxpow\"  (string, optional) serialised auxpow found\n"
             "\nResult (without arguments):\n"
             "{\n"
             "  \"hash\"               (string) hash of the created block\n"

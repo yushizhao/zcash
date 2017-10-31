@@ -268,7 +268,7 @@ public:
         pchMessageStart[3] = 0xda;
         nMaxTipAge = 24 * 60 * 60;
         genesis.nTime = 1296688602;
-        genesis.nBits = 0x1E020A08;
+        genesis.nBits = 0x207fffff;
         genesis.nNonce = 2;
         consensus.hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 18344;
