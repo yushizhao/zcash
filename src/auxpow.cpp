@@ -19,29 +19,14 @@
 
 #include <algorithm>
 
-CPureTransaction::CPureTransaction() : nVersion(CTransaction::MIN_CURRENT_VERSION), nLockTime(0) {}
-
-uint256 CPureTransaction::GetHash() const
-{
-    return SerializeHash(*this);
+std::string hash_swap (std::string input) {
+    std::string output;
+    for (int i = 0; i < 32; i++) {
+        output += input[62-i*2];
+        output += input[62-i*2+1];
+    }
+    return  output;
 }
-
-std::string CPureTransaction::ToString() const
-{
-    std::string str;
-    str += strprintf("CPureTransaction(hash=%s, ver=%d, vin.size=%u, vout.size=%u, nLockTime=%u)\n",
-        GetHash().ToString().substr(0,10),
-        nVersion,
-        vin.size(),
-        vout.size(),
-        nLockTime);
-    for (unsigned int i = 0; i < vin.size(); i++)
-        str += "    " + vin[i].ToString() + "\n";
-    for (unsigned int i = 0; i < vout.size(); i++)
-        str += "    " + vout[i].ToString() + "\n";
-    return str;
-}
-
 /* ************************************************************************** */
 
 bool
@@ -54,26 +39,31 @@ CAuxPow::check(const uint256& hashAuxBlock, const Consensus::Params& params) con
         return error("Aux POW chain merkle branch too long");
 
     // Check that the chain merkle root is in the coinbase
-    const uint256 nRootHash = CBlock::CheckMerkleBranch(hashAuxBlock, vChainMerkleBranch, nChainIndex);
+    const uint256 nRootHash = CBlock::CheckMerkleBranch(SerializeHash(hash_swap(uint256S(hashAuxBlock.ToString()))), vChainMerkleBranch, nChainIndex);
+    LogPrintf("nRootHash: %s\n",nRootHash.ToString());
+    LogPrintf("coinbaseTx %s\n", coinbaseTx.GetHash().ToString());
+    LogPrintf("coinbaseTx,hash %s\n", SerializeHash(coinbaseTx).ToString());
+    LogPrintf("headhash %s\n",parentBlock.GetHash().ToString());
     std::vector<unsigned char> vchRootHash(nRootHash.begin(), nRootHash.end());
     std::reverse(vchRootHash.begin(), vchRootHash.end()); // correct endian
     
     // Check that we are in the parent block merkle tree
-    if (CBlock::CheckMerkleBranch(coinbaseTx.GetHash(), vMerkleBranch, nIndex) != parentBlock.hashMerkleRoot)
+    if (CBlock::CheckMerkleBranch(SerializeHash(coinbaseTx), vMerkleBranch, nIndex) != parentBlock.hashMerkleRoot)
+        LogPrintf("coinbaseTx: %s\n",coinbaseTx.GetHash().ToString());
+        LogPrintf("calculated: %s\n",CBlock::CheckMerkleBranch(coinbaseTx.GetHash(), vMerkleBranch, nIndex).ToString());
+        LogPrintf("Merkle Root: %s\n",parentBlock.hashMerkleRoot.ToString());
         return error("Aux POW merkle root incorrect");
+        
+    std::vector<unsigned char>::const_iterator pcHead =
+        std::search(coinbaseTx.begin(), coinbaseTx.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader));
 
-    const CScript script = coinbaseTx.vin[0].scriptSig;
-
-    CScript::const_iterator pcHead =
-        std::search(script.begin(), script.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader));
-
-    if (pcHead == script.end())
+    if (pcHead == coinbaseTx.end())
         return error("Aux POW missing MergedMiningHeader in parent coinbase");
     
-    CScript::const_iterator pc =
-        std::search(script.begin(), script.end(), vchRootHash.begin(), vchRootHash.end());
+    std::vector<unsigned char>::const_iterator pc =
+        std::search(coinbaseTx.begin(), coinbaseTx.end(), vchRootHash.begin(), vchRootHash.end());
 
-    if (pc == script.end())
+    if (pc == coinbaseTx.end())
         return error("Aux POW missing chain merkle root in parent coinbase");
 
     if (pcHead + sizeof(pchMergedMiningHeader) != pc)

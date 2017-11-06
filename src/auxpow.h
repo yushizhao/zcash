@@ -21,36 +21,6 @@ class CBlockIndex;
 /** Header for merge-mining data in the coinbase.  */
 static const unsigned char pchMergedMiningHeader[] = {0xfa, 0xbe, 'm', 'm'};
 
-/**bitcoin::CMutableTransaction**/
-struct CPureTransaction
-{
-    int32_t nVersion;
-    std::vector<CTxIn> vin;
-    std::vector<CTxOut> vout;
-    uint32_t nLockTime;
-
-    CPureTransaction();
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-        READWRITE(this->nVersion);
-        nVersion = this->nVersion;
-        READWRITE(vin);
-        READWRITE(vout);
-        READWRITE(nLockTime);
-    }
-
-    /** Compute the hash of this CMutableTransaction. This is computed on the
-     * fly, as opposed to GetHash() in CTransaction, which uses a cached result.
-     */
-    uint256 GetHash() const;
-    
-    /**for debug**/
-    std::string ToString() const;
-};
-
 class CAuxPow
 {
     
@@ -65,7 +35,7 @@ public:
 
     /** Parent block header (on which the real PoW is done).  */
     CPureBlockHeader parentBlock;
-    CPureTransaction coinbaseTx;
+    const std::vector<unsigned char> coinbaseTx;
     
 
 public:
