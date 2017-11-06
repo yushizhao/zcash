@@ -78,7 +78,8 @@ double GetNetworkDifficulty(const CBlockIndex* blockindex)
 UniValue auxpowToJSON(const CAuxPow& auxpow)
 {
     UniValue tx;
-    tx.push_back(Pair("hex", EncodeHexPureTx(auxpow.coinbaseTx)));
+    tx.push_back(Pair("hex", EncodeHexTx(auxpow)));
+    TxToJSON(auxpow, auxpow.parentBlock.GetHash(), tx);
 
     UniValue result;
     result.push_back(Pair("tx", tx));
