@@ -42,12 +42,6 @@ CAuxPow::check(const uint256& hashAuxBlock, const Consensus::Params& params) con
     uint256 rehashAuxBlock;
     rehashAuxBlock.SetHex(hash_swap(hashAuxBlock.ToString()));
     const uint256 nRootHash = CBlock::CheckMerkleBranch(SerializeHash(rehashAuxBlock), vChainMerkleBranch, nChainIndex);
-    LogPrintf("nRootHash: %s\n",nRootHash.ToString());
-    LogPrintf("coinbaseTx,hash %s\n", Hash(coinbaseTx.begin(), coinbaseTx.end()).ToString());
-    LogPrintf("headhash %s\n",parentBlock.GetHash().ToString());
-    LogPrintf("calculated: %s\n",CBlock::CheckMerkleBranch(Hash(coinbaseTx.begin(), coinbaseTx.end()), vMerkleBranch, nIndex).ToString());
-    LogPrintf("Merkle Root: %s\n",parentBlock.hashMerkleRoot.ToString());
-
     std::vector<unsigned char> vchRootHash(nRootHash.begin(), nRootHash.end());
     
     // Check that we are in the parent block merkle tree
