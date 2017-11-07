@@ -35,7 +35,7 @@ public:
 
     /** Parent block header (on which the real PoW is done).  */
     CPureBlockHeader parentBlock;
-    const std::vector<unsigned char> coinbaseTx;
+    std::vector<unsigned char> coinbaseTx;
     
 
 public:
