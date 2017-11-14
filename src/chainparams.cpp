@@ -85,7 +85,7 @@ public:
         // guarantees the first character, when base58 encoded, is "z"
         base58Prefixes[ZCPAYMENT_ADDRRESS] = std::vector<unsigned char>(1,99);
         // guarantees the first character, when base58 encoded, is "S"
-        base58Prefixes[ZCSPENDING_KEY]     = {0x3f};
+        base58Prefixes[ZCSPENDING_KEY]     = std::vector<unsigned char>(1,13);
         fMiningRequiresPeers = true;
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
