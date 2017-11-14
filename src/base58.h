@@ -101,7 +101,7 @@ public:
     bool Set(const libzcash::PaymentAddress& addr);
     CZCPaymentAddress() {}
 
-    CZCPaymentAddress(const std::string& strAddress) { SetString(strAddress.c_str(), 2); }
+    CZCPaymentAddress(const std::string& strAddress) { SetString(strAddress.c_str(), 1); }
     CZCPaymentAddress(const libzcash::PaymentAddress& addr) { Set(addr); }
 
     libzcash::PaymentAddress Get() const;
@@ -112,7 +112,7 @@ public:
     bool Set(const libzcash::SpendingKey& addr);
     CZCSpendingKey() {}
 
-    CZCSpendingKey(const std::string& strAddress) { SetString(strAddress.c_str(), 2); }
+    CZCSpendingKey(const std::string& strAddress) { SetString(strAddress.c_str(), 1); }
     CZCSpendingKey(const libzcash::SpendingKey& addr) { Set(addr); }
 
     libzcash::SpendingKey Get() const;
