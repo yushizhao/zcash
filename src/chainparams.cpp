@@ -83,9 +83,8 @@ public:
         base58Prefixes[EXT_PUBLIC_KEY]     = boost::assign::list_of(0x04)(0x88)(0xB2)(0x1E).convert_to_container<std::vector<unsigned char> >();
         base58Prefixes[EXT_SECRET_KEY]     = boost::assign::list_of(0x04)(0x88)(0xAD)(0xE4).convert_to_container<std::vector<unsigned char> >();
         // guarantees the first character, when base58 encoded, is "z"
-        base58Prefixes[ZCPAYMENT_ADDRRESS] = {0x16};
         // guarantees the first character, when base58 encoded, is "S"
-        base58Prefixes[ZCSPENDING_KEY]     = {0xAB};
+        base58Prefixes[ZCSPENDING_KEY]     = {0x3f};
         fMiningRequiresPeers = true;
         fDefaultConsistencyChecks = false;
         fRequireStandard = true;
@@ -192,10 +191,10 @@ public:
         base58Prefixes[SECRET_KEY]         = std::vector<unsigned char>(1,128);
         base58Prefixes[EXT_PUBLIC_KEY]     = boost::assign::list_of(0x04)(0x88)(0xB2)(0x1E).convert_to_container<std::vector<unsigned char> >();
         base58Prefixes[EXT_SECRET_KEY]     = boost::assign::list_of(0x04)(0x88)(0xAD)(0xE4).convert_to_container<std::vector<unsigned char> >();
-        // guarantees the first character, when base58 encoded, is "z"
-        base58Prefixes[ZCPAYMENT_ADDRRESS] = {0x16};
-        // guarantees the first character, when base58 encoded, is "S"
-        base58Prefixes[ZCSPENDING_KEY]     = {0xAB};
+        // guarantees the first 2 characters, when base58 encoded, are "zt"
+        base58Prefixes[ZCPAYMENT_ADDRRESS] = {0x16,0xB6};
+        // guarantees the first 2 characters, when base58 encoded, are "ST"
+        base58Prefixes[ZCSPENDING_KEY]     = {0xAC,0x08};
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
 
