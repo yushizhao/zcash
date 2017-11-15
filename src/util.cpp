@@ -450,7 +450,7 @@ boost::filesystem::path GetDefaultDataDir()
     // Unix: ~/.zcash
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "Zcash";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "bitcoinzero";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -462,10 +462,10 @@ boost::filesystem::path GetDefaultDataDir()
     // Mac
     pathRet /= "Library/Application Support";
     TryCreateDirectory(pathRet);
-    return pathRet / "Zcash";
+    return pathRet / "bitcoinzero";
 #else
     // Unix
-    return pathRet / ".zcash";
+    return pathRet / ".bitcoinzero";
 #endif
 #endif
 }
