@@ -253,16 +253,9 @@ public:
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xda;
         nMaxTipAge = 24 * 60 * 60;
-        genesis.nTime = 1296688602;
-        genesis.nBits = 0x207fffff;
-        genesis.nNonce = 2;
-        consensus.hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 18344;
-        consensus.hashGenesisBlock.SetHex("105f2273c14d1e0217d159f191ec812cf763da1a05a0afc70dd81502f7bdd12c");
-        // assert(consensus.hashMerkleRoot == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));                                                                          ssert(genesis.hashMerkleRoot == uint256S("eb9e8e6ff33de3e5aad6c64a33a6cb6ee80574d6ddc29f6db5f7e434c49cece4"));
-        // assert(consensus.hashGenesisBlock == uint256S("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70"));
-        
-        nPruneAfterHeight = 1000;
+        consensus.hashGenesisBlock.SetHex("59058d8828acad88163f9bc444e232fea2c9e1cfcc2b6066c668e12b4dbbe39d");
+        consensus.hashMerkleRoot.SetHex("8c47a50f9680a6a9a6de26b144d6d88ecc0372915a0b1d890449230061336786");        
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();  //! Regtest mode doesn't have any DNS seeds.
@@ -272,15 +265,6 @@ public:
         fRequireStandard = false;
         fMineBlocksOnDemand = true;
         fTestnetToBeDeprecatedFieldRPC = false;
-
-        // checkpointData = (Checkpoints::CCheckpointData){
-            // boost::assign::map_list_of
-            // ( 0, uint256S("0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206")),
-            // 0,
-            // 0,
-            // 0
-        // };
-        // Founders reward script expects a vector of 2-of-3 multisig addresses
         vFoundersRewardAddress = { "t2FwcEhFdNXuFMv1tcYwaBJtYVtMj8b1uTg" };
         assert(vFoundersRewardAddress.size() <= consensus.GetLastFoundersRewardBlockHeight());
 	}
