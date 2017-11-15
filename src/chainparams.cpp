@@ -177,11 +177,7 @@ public:
         nPruneAfterHeight = 1000;
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
-        genesis.nTime = 1477648033;
-        genesis.nBits = 0x2007ffff;
-        genesis.nNonce = 0;
-        consensus.hashGenesisBlock = genesis.GetHash();
-        // assert(consensus.hashGenesisBlock == uint256S("0x05a60a92d99d85997cce3b87616c089f6124d7342af37106edc76126334a2c38"));
+        consensus.hashGenesisBlock = uint256S("59058d8828acad88163f9bc444e232fea2c9e1cfcc2b6066c668e12b4dbbe39d");
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -205,16 +201,6 @@ public:
         fMineBlocksOnDemand = false;
         fTestnetToBeDeprecatedFieldRPC = true;
 
-        // checkpointData = (Checkpoints::CCheckpointData) {
-            // boost::assign::map_list_of
-            // (0, consensus.hashGenesisBlock)
-            // (38000, uint256S("0x001e9a2d2e2892b88e9998cf7b079b41d59dd085423a921fe8386cecc42287b8")),
-            // 1486897419,  // * UNIX timestamp of last checkpoint block
-            // 47163,       // * total number of transactions between genesis and last checkpoint
-                           // (the tx=... number in the SetBestChain debug.log lines)
-            // 715          //   total number of tx / (checkpoint block height / (24 * 24))
-        // };
-        // Founders reward script expects a vector of 2-of-3 multisig addresses
         vFoundersRewardAddress = {
             "t2UNzUUx8mWBCRYPRezvA363EYXyEpHokyi", "t2N9PH9Wk9xjqYg9iin1Ua3aekJqfAtE543", "t2NGQjYMQhFndDHguvUw4wZdNdsssA6K7x2", "t2ENg7hHVqqs9JwU5cgjvSbxnT2a9USNfhy",
             "t2BkYdVCHzvTJJUTx4yZB8qeegD8QsPx8bo", "t2J8q1xH1EuigJ52MfExyyjYtN3VgvshKDf", "t2Crq9mydTm37kZokC68HzT6yez3t2FBnFj", "t2EaMPUiQ1kthqcP5UEkF42CAFKJqXCkXC9", 
@@ -254,7 +240,7 @@ public:
         pchMessageStart[3] = 0xda;
         nMaxTipAge = 24 * 60 * 60;
         nDefaultPort = 18344;
-        consensus.hashGenesisBlock.SetHex("59058d8828acad88163f9bc444e232fea2c9e1cfcc2b6066c668e12b4dbbe39d");
+        consensus.hashGenesisBlock.SetHex("fcde2cc4f25acaa6f6577a994f7e34a31df525c0bfc554ec294e90adb7249d70");
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();  //! Regtest mode doesn't have any DNS seeds.
