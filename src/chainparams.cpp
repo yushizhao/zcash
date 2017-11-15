@@ -255,7 +255,6 @@ public:
         nMaxTipAge = 24 * 60 * 60;
         nDefaultPort = 18344;
         consensus.hashGenesisBlock.SetHex("59058d8828acad88163f9bc444e232fea2c9e1cfcc2b6066c668e12b4dbbe39d");
-        consensus.hashMerkleRoot.SetHex("8c47a50f9680a6a9a6de26b144d6d88ecc0372915a0b1d890449230061336786");        
 
         vFixedSeeds.clear(); //! Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();  //! Regtest mode doesn't have any DNS seeds.
