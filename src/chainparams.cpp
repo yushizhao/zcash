@@ -56,7 +56,7 @@ public:
         pchMessageStart[2] = 0x27;
         pchMessageStart[3] = 0x64;
         vAlertPubKey = ParseHex("04b7ecf0baa90495ceb4e4090f6b2fd37eec1e9c85fac68a487f3ce11589692e4a317479316ee814e066638e1db54e37a10689b70286e6315b1087b6615d179264");
-        nDefaultPort = 8233;
+        nDefaultPort = 8083;
         nMaxTipAge = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
 		
@@ -173,7 +173,7 @@ public:
         pchMessageStart[2] = 0x3d;
         pchMessageStart[3] = 0x4a;
         vAlertPubKey = ParseHex("044e7a1553392325c871c5ace5d6ad73501c66f4c185d6b0453cf45dec5a1322e705c672ac1a27ef7cdaf588c10effdf50ed5f95f85f2f54a5f6159fca394ed0c6");
-        nDefaultPort = 18383;
+        nDefaultPort = 18083;
         nPruneAfterHeight = 1000;
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
@@ -183,15 +183,15 @@ public:
         vSeeds.clear();
         vSeeds.push_back(CDNSSeedData("z.cash", "dnsseed.testnet.z.cash")); // Zcash
 
-        base58Prefixes[PUBKEY_ADDRESS]     = std::vector<unsigned char>(1,0);
-        base58Prefixes[SCRIPT_ADDRESS]     = std::vector<unsigned char>(1,5);
-        base58Prefixes[SECRET_KEY]         = std::vector<unsigned char>(1,128);
-        base58Prefixes[EXT_PUBLIC_KEY]     = boost::assign::list_of(0x04)(0x88)(0xB2)(0x1E).convert_to_container<std::vector<unsigned char> >();
-        base58Prefixes[EXT_SECRET_KEY]     = boost::assign::list_of(0x04)(0x88)(0xAD)(0xE4).convert_to_container<std::vector<unsigned char> >();
-        // guarantees the first 2 characters, when base58 encoded, are "zt"
-        base58Prefixes[ZCPAYMENT_ADDRRESS] = {0x16,0xB6};
-        // guarantees the first 2 characters, when base58 encoded, are "ST"
-        base58Prefixes[ZCSPENDING_KEY]     = {0xAC,0x08};
+        base58Prefixes[PUBKEY_ADDRESS]     = std::vector<unsigned char>(1,111);
+        base58Prefixes[SCRIPT_ADDRESS]     = std::vector<unsigned char>(1,196);
+        base58Prefixes[SECRET_KEY]         = std::vector<unsigned char>(1,239);
+        base58Prefixes[EXT_PUBLIC_KEY]     = {0x04, 0x35, 0x87, 0xCF};
+        base58Prefixes[EXT_SECRET_KEY]     = {0x04, 0x35, 0x83, 0x94};
+
+        base58Prefixes[ZCPAYMENT_ADDRRESS] = std::vector<unsigned char>(1,49);
+
+        base58Prefixes[ZCSPENDING_KEY]     = std::vector<unsigned char>(1,6);
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
 
