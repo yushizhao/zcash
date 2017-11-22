@@ -118,3 +118,4 @@ GTAGS
 GRTAGS
 GPATH
 NppGTags.cfg
+src/gtest/test_foundersreward.cpp
