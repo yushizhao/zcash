@@ -144,7 +144,7 @@ bool CheckAuxPowProofOfWork(const CBlockHeader& block, const Consensus::Params& 
     }
 
     /* We have auxpow.  Check it.  */
-    if (block.GetChainId() != params.nAuxpowChainId)
+    if (block.nVersion.GetChainId() != params.nAuxpowChainId)
         return error("%s : block's chain ID is not valid", __func__);
     if (!block.auxpow->check(block.GetHash(), params))
         return error("%s : AUX POW is not valid", __func__);
