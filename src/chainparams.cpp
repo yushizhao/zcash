@@ -60,7 +60,7 @@ public:
         nMaxTipAge = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
 		
-        consensus.AuxpowChainId = 0xffff;
+        consensus.nAuxpowChainId = 0xffff;
         
 		/**
          * Build the genesis block. Note that the output of its generation
