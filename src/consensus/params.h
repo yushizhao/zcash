@@ -37,8 +37,7 @@ struct Params {
     int64_t MaxActualTimespan() const { return (AveragingWindowTimespan() * (100 + nPowMaxAdjustDown)) / 100; }
 
 	/** Auxpow parameters */
-    bool fAllowAuxPow;
-    bool fAllowLegacyBlocks;
+    bool nAuxpowChainId;
 	};
 } // namespace Consensus
 
