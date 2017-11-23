@@ -149,7 +149,7 @@ bool CheckAuxPowProofOfWork(const CBlockHeader& block, const Consensus::Params& 
     
     if (!block.nVersion.IsAuxpow2()) {
         if (!block.nVersion.IsAuxpow())
-            return error("%s : No auxpow flag in nVersion", __func__)
+            return error("%s : No auxpow flag in nVersion", __func__);
         if (!block.auxpow->check(block.GetHash(), params))
             return error("%s : AUX POW is not valid", __func__);
     } else {
