@@ -61,6 +61,7 @@ public:
    * @return True if the auxpow is valid.
    */
     bool check(const uint256& hashAuxBlock, const Consensus::Params& params) const;
+    bool check2(const uint256& hashAuxBlock, const Consensus::Params& params) const;
 
     /**
    * Get the parent block's hash.  This is used to verify that it
