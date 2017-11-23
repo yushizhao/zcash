@@ -101,10 +101,8 @@ CAuxPow::check2(const uint256& hashAuxBlock, const Consensus::Params& params) co
         int nSubChainIndex;
         nSubChainIndex = getExpectedIndex(nSubNonce, params.nSubAuxpowChainId, nSubHeight);
         
-        std::vector<uint256> vSubChainMerkleBranch(vChainMerkleBranch.begin()+merkleHeight, vChainMerkleBranch.end());
-        
-        //reset vChainMerkleBranch
-        vChainMerkleBranch.erase(vChainMerkleBranch.begin()+merkleHeight,vChainMerkleBranch.end());
+        std::vector<uint256> vSubChainMerkleBranch(vChainMerkleBranch.begin() + merkleHeight, vChainMerkleBranch.end());
+        std::vector<uint256> vMainChainMerkleBranch(vChainMerkleBranch.begin(), vChainMerkleBranch.begin() + merkleHeight - 1);        
         
         //get subtree root
         uint256 nSubtreeRoot256;
@@ -119,8 +117,28 @@ CAuxPow::check2(const uint256& hashAuxBlock, const Consensus::Params& params) co
         if (pcSub != vchSubRoot.begin())
             return error("subRoot do not have subtree root hash");
         
-        //treat subRoot as hashAuxBlock
-        hashAuxBlock = subRoot;
+        int nNonce;
+        memcpy(&nNonce, &pcHead[36], 4);
+        
+        int nChainIndex;
+        nChainIndex = getExpectedIndex(nNonce, params.nAuxpowChainId, merkleHeight);
+
+        // get chain merkle root
+        const uint256 nRootHash = CBlock::CheckMerkleBranch(subRoot, vMainChainMerkleBranch, nChainIndex);
+        std::vector<unsigned char> vchRootHash(nRootHash.begin(), nRootHash.end());
+        std::reverse(vchRootHash.begin(), vchRootHash.end()); // correct endian
+        // check that chain merkle root is in the coinbase
+        std::vector<unsigned char>::const_iterator pc =
+        std::search(pcHead, pcHead + 32, vchRootHash.begin(), vchRootHash.end());
+        if (pcHead != pc)
+            return error("Merged mining header is not just before chain merkle root");
+        
+        // Check the coinbase is in the parent block merkle tree
+        if (CBlock::CheckMerkleBranch(Hash(coinbaseTx.begin(), coinbaseTx.end()), vMerkleBranch, 0) != parentBlock.hashMerkleRoot) {
+            return error("Aux POW merkle root incorrect");        
+        }
+
+        return true;       
     }
     
     int nNonce;
