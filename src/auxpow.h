@@ -28,15 +28,13 @@ public:
     /** The merkle branch connecting the aux block to our coinbase.  */
     std::vector<uint256> vChainMerkleBranch;
     std::vector<uint256> vMerkleBranch;
-
-    /** Merkle tree index of the aux block header in the coinbase.  */
-    int nChainIndex;
-    int nIndex;
-
+    
     /** Parent block header (on which the real PoW is done).  */
     CPureBlockHeader parentBlock;
     std::vector<unsigned char> coinbaseTx;
     
+    /** subtree root.  */
+    uint256 subRoot;
 
 public:
     CAuxPow(){}
@@ -47,12 +45,11 @@ public:
     inline void
     SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
     {
-        READWRITE(coinbaseTx);        
-        READWRITE(vMerkleBranch);
-        READWRITE(nIndex);       
-        READWRITE(vChainMerkleBranch);
-        READWRITE(nChainIndex);
         READWRITE(parentBlock);
+        READWRITE(coinbaseTx);        
+        READWRITE(vMerkleBranch);      
+        READWRITE(vChainMerkleBranch);
+        READWRITE(subRoot);
     }
 
     /**

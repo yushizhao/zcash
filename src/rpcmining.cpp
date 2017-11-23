@@ -735,7 +735,7 @@ UniValue estimatepriority(const UniValue& params, bool fHelp)
 #ifdef ENABLE_WALLET
 UniValue getauxblockbip22(const UniValue& params, bool fHelp)
 {
-    if (fHelp || (params.size() != 0 && params.size() != 7))
+    if (fHelp || (params.size() != 0 && params.size() != 6))
         throw std::runtime_error(
             "getauxblock (hash auxpow)\n"
             "\nCreate or submit a merge-mined block.\n"
@@ -822,6 +822,8 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
             CBlock* pblock = &pblocktemplate->block;
             IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
             pblock->nVersion.SetAuxpow(true);
+            pblock->nVersion.SetAuxpow2(true);
+            pblock->nNonce = Params().GetConsensus().nSubAuxpowChainId;
             pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 
             // Save
@@ -841,6 +843,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         UniValue result(UniValue::VOBJ);
         result.push_back(Pair("hash", block.GetHash().GetHex()));
         result.push_back(Pair("chainid", block.nVersion.GetChainId()));
+        result.push_back(Pair("subchainid", block.nNonce));
         result.push_back(Pair("previousblockhash", block.hashPrevBlock.GetHex()));
         result.push_back(Pair("coinbasevalue", (int64_t)block.vtx[0].vout[0].nValue));
         result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
@@ -853,7 +856,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
     /* Submit a block instead.  Note that this need not lock cs_main,
        since ProcessBlockFound below locks it instead.  */
 
-    assert(params.size() == 7);
+    assert(params.size() == 6);
 
     uint256 hash;
     hash.SetHex(params[0].get_str());
@@ -878,9 +881,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         vMerkleBranch.push_back(tmpHash);
     }
     
-    int nIndex = params[4].get_int();
-    
-    UniValue chainBranch = params[5].get_array();
+    UniValue chainBranch = params[4].get_array();
     std::vector<uint256> vChainMerkleBranch;
     for (size_t idx = 0; idx < chainBranch.size(); idx++) {
         uint256 tmpHash;
@@ -888,16 +889,16 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         vChainMerkleBranch.push_back(tmpHash);
     }
     
-    int nChainIndex = params[6].get_int();
+    uint256 subRoot;
+    subRoot.SetHex(params[5].get_str());
     
     CAuxPow pow;
     pow.coinbaseTx = vchtx;
     pow.vMerkleBranch = vMerkleBranch;
-    pow.nIndex = nIndex;
     pow.vChainMerkleBranch = vChainMerkleBranch;
-    pow.nChainIndex = nChainIndex;
     pow.parentBlock = bitcoinHeader;
-
+    pow.subRoot = subRoot;
+    
     block.SetAuxpow(new CAuxPow(pow));
     assert(block.GetHash() == hash);
 

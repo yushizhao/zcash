@@ -38,6 +38,7 @@ struct Params {
 
 	/** Auxpow parameters */
     int16_t nAuxpowChainId;
+    int32_t nSubAuxpowChainId;
 	};
 } // namespace Consensus
 

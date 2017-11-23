@@ -61,7 +61,7 @@ public:
         nPruneAfterHeight = 100000;
 		
         consensus.nAuxpowChainId = 0xffff;
-        
+        consensus.nSubAuxpowChainId = 478558;
 		/**
          * Build the genesis block. Note that the output of its generation
          * transaction cannot be spent since it did not originally exist in the
