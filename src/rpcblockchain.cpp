@@ -86,9 +86,6 @@ UniValue auxpowToJSON(const CAuxPow& auxpow)
     BOOST_FOREACH (const unsigned char& raw, auxpow.coinbaseTx)
         tx.push_back(raw);
     result.push_back(Pair("tx", tx));
-    
-    result.push_back(Pair("index", auxpow.nIndex));
-    result.push_back(Pair("chainindex", auxpow.nChainIndex));
 
     UniValue branch(UniValue::VARR);	
     BOOST_FOREACH (const uint256& node, auxpow.vMerkleBranch)
@@ -104,7 +101,9 @@ UniValue auxpowToJSON(const CAuxPow& auxpow)
     ssParent << auxpow.parentBlock;
     const std::string strHex = HexStr(ssParent.begin(), ssParent.end());
     result.push_back(Pair("parentblock", strHex));
-
+    
+    result.push_back(Pair("subRoot", auxpow.subRoot.GetHex()));
+    
     return result;
 }
 
