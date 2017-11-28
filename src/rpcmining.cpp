@@ -731,6 +731,32 @@ UniValue estimatepriority(const UniValue& params, bool fHelp)
 
 /* ************************************************************************** */
 /* Merge mining.  */
+UniValue auxpowToJSON(const CAuxPow& auxpow)
+{
+    UniValue result(UniValue::VOBJ);
+    
+    result.push_back(Pair("tx", HexStr(auxpow.coinbaseTx)));
+
+    UniValue branch(UniValue::VARR);	
+    BOOST_FOREACH (const uint256& node, auxpow.vMerkleBranch)
+        branch.push_back(node.GetHex());
+    result.push_back(Pair("merklebranch", branch));
+
+    UniValue chainbranch(UniValue::VARR);
+    BOOST_FOREACH (const uint256& node, auxpow.vChainMerkleBranch)
+        chainbranch.push_back(node.GetHex());
+    result.push_back(Pair("chainmerklebranch", chainbranch));
+
+    CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
+    ssParent << auxpow.parentBlock;
+    const std::string strHex = HexStr(ssParent.begin(), ssParent.end());
+    result.push_back(Pair("parentblock", strHex));
+    
+    result.push_back(Pair("subRoot", auxpow.subRoot.GetHex()));
+    
+    return result;
+}
+
 
 #ifdef ENABLE_WALLET
 UniValue getauxblockbip22(const UniValue& params, bool fHelp)

@@ -78,35 +78,6 @@ double GetNetworkDifficulty(const CBlockIndex* blockindex)
     return GetDifficultyINTERNAL(blockindex, true);
 }
 
-UniValue auxpowToJSON(const CAuxPow& auxpow)
-{
-    UniValue result;
-    
-    UniValue tx(UniValue::VARR);	
-    BOOST_FOREACH (const unsigned char& raw, auxpow.coinbaseTx)
-        tx.push_back(raw);
-    result.push_back(Pair("tx", tx));
-
-    UniValue branch(UniValue::VARR);	
-    BOOST_FOREACH (const uint256& node, auxpow.vMerkleBranch)
-        branch.push_back(node.GetHex());
-    result.push_back(Pair("merklebranch", branch));
-
-    branch.clear();
-    BOOST_FOREACH (const uint256& node, auxpow.vChainMerkleBranch)
-        branch.push_back(node.GetHex());
-    result.push_back(Pair("chainmerklebranch", branch));
-
-    CDataStream ssParent(SER_NETWORK, PROTOCOL_VERSION);
-    ssParent << auxpow.parentBlock;
-    const std::string strHex = HexStr(ssParent.begin(), ssParent.end());
-    result.push_back(Pair("parentblock", strHex));
-    
-    result.push_back(Pair("subRoot", auxpow.subRoot.GetHex()));
-    
-    return result;
-}
-
 UniValue blockheaderToJSON(const CBlockIndex* blockindex)
 {
     UniValue result(UniValue::VOBJ);
