@@ -112,8 +112,6 @@ public:
         READWRITE(*const_cast<std::vector<CTxIn>*>(&vin));
         READWRITE(*const_cast<std::vector<CTxOut>*>(&vout));
         READWRITE(*const_cast<uint32_t*>(&nLockTime));
-        if (ser_action.ForRead())
-            UpdateHash();
     }
     
     std::string ToHex() const;
@@ -127,7 +125,7 @@ public:
     std::vector<uint256> vMerkleBranch;
     int nIndex;
 
-    CPureMerkleTx();
+    CPureMerkleTx(){}
 
     ADD_SERIALIZE_METHODS;
 
@@ -158,7 +156,7 @@ public:
 public:
     /* Prevent accidental conversion.  */
 
-    inline CClassicAuxPow();
+    CClassicAuxPow(){}
 
     ADD_SERIALIZE_METHODS;
 

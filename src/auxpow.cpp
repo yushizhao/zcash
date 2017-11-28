@@ -183,6 +183,8 @@ CAuxPow::getExpectedIndex(int nNonce, int nChainId, unsigned h)
     return rand % (1 << h);
 }
 
+CPureTransaction::CPureTransaction() : nVersion(0), vin(), vout(), nLockTime(0) { }
+
 std::string CPureTransaction::ToHex() const 
 {
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);

@@ -872,15 +872,12 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         ss >> classicPow;
       
         CAuxPow pow;
-
-        CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-        ssTx << tx;
-        return HexStr(ssTx.begin(), ssTx.end());        
-        pow.coinbaseTx = classicPow.ToHex();
+       
+        pow.coinbaseTx = ParseHex(classicPow.ToHex());
         pow.vMerkleBranch = classicPow.vMerkleBranch;
         pow.vChainMerkleBranch = classicPow.vChainMerkleBranch;
         pow.parentBlock = classicPow.parentBlock;
-        pow.subRoot = hashBlock;
+        pow.subRoot = classicPow.hashBlock;
 
         block.SetAuxpow(new CAuxPow(pow));
         assert(block.GetHash() == hash);
