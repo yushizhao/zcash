@@ -434,10 +434,10 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid mode");
 
     if (vNodes.empty())
-        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "Dogecoin is not connected!");
+        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "BitcoinZero is not connected!");
 
     if (IsInitialBlockDownload())
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Dogecoin is downloading blocks...");
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "BitcoinZero is downloading blocks...");
 
     static unsigned int nTransactionsUpdatedLast;
 
@@ -735,7 +735,7 @@ UniValue estimatepriority(const UniValue& params, bool fHelp)
 #ifdef ENABLE_WALLET
 UniValue getauxblockbip22(const UniValue& params, bool fHelp)
 {
-    if (fHelp || (params.size() != 0 && params.size() != 6))
+    if (fHelp || (params.size() != 0 && params.size() != 2 && params.size() != 6))
         throw std::runtime_error(
             "getauxblock (hash auxpow)\n"
             "\nCreate or submit a merge-mined block.\n"
@@ -855,9 +855,6 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
 
     /* Submit a block instead.  Note that this need not lock cs_main,
        since ProcessBlockFound below locks it instead.  */
-
-    assert(params.size() == 6);
-
     uint256 hash;
     hash.SetHex(params[0].get_str());
 
@@ -865,6 +862,32 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
     if (mit == mapNewBlock.end())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "block hash unknown");
     CBlock& block = *mit->second;
+    
+    if (params.size() == 2) {
+        
+        const std::vector<unsigned char> vchAuxPow = ParseHex(params[1].get_str());
+        CDataStream ss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
+            
+        CClassicAuxPow classicPow;
+        ss >> classicPow;
+      
+        CAuxPow pow;
+
+        CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+        ssTx << tx;
+        return HexStr(ssTx.begin(), ssTx.end());        
+        pow.coinbaseTx = classicPow.ToHex();
+        pow.vMerkleBranch = classicPow.vMerkleBranch;
+        pow.vChainMerkleBranch = classicPow.vChainMerkleBranch;
+        pow.parentBlock = classicPow.parentBlock;
+        pow.subRoot = hashBlock;
+
+        block.SetAuxpow(new CAuxPow(pow));
+        assert(block.GetHash() == hash);
+        
+    }
+    
+    assert(params.size() == 6);
 
     const std::vector<unsigned char> vchheader = ParseHex(params[1].get_str());
     CDataStream ssheader(vchheader, SER_GETHASH, PROTOCOL_VERSION);
