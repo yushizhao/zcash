@@ -882,46 +882,46 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         block.SetAuxpow(new CAuxPow(pow));
         assert(block.GetHash() == hash);
         
-    }
-    
-    assert(params.size() == 6);
+    } else {
+        assert(params.size() == 6);
 
-    const std::vector<unsigned char> vchheader = ParseHex(params[1].get_str());
-    CDataStream ssheader(vchheader, SER_GETHASH, PROTOCOL_VERSION);
-    CPureBlockHeader bitcoinHeader; 
-    ssheader >> bitcoinHeader;    
-    
-    const std::vector<unsigned char> vchtx = ParseHex(params[2].get_str());
-    
-    UniValue txBranch = params[3].get_array();
-    std::vector<uint256> vMerkleBranch;
-    for (size_t idx = 0; idx < txBranch.size(); idx++) {
-        uint256 tmpHash;
-        tmpHash.SetHex(txBranch[idx].get_str());
-        vMerkleBranch.push_back(tmpHash);
+        const std::vector<unsigned char> vchheader = ParseHex(params[1].get_str());
+        CDataStream ssheader(vchheader, SER_GETHASH, PROTOCOL_VERSION);
+        CPureBlockHeader bitcoinHeader; 
+        ssheader >> bitcoinHeader;    
+        
+        const std::vector<unsigned char> vchtx = ParseHex(params[2].get_str());
+        
+        UniValue txBranch = params[3].get_array();
+        std::vector<uint256> vMerkleBranch;
+        for (size_t idx = 0; idx < txBranch.size(); idx++) {
+            uint256 tmpHash;
+            tmpHash.SetHex(txBranch[idx].get_str());
+            vMerkleBranch.push_back(tmpHash);
+        }
+        
+        UniValue chainBranch = params[4].get_array();
+        std::vector<uint256> vChainMerkleBranch;
+        for (size_t idx = 0; idx < chainBranch.size(); idx++) {
+            uint256 tmpHash;
+            tmpHash.SetHex(chainBranch[idx].get_str());
+            vChainMerkleBranch.push_back(tmpHash);
+        }
+        
+        uint256 subRoot;
+        subRoot.SetHex(params[5].get_str());
+        
+        CAuxPow pow;
+        pow.coinbaseTx = vchtx;
+        pow.vMerkleBranch = vMerkleBranch;
+        pow.vChainMerkleBranch = vChainMerkleBranch;
+        pow.parentBlock = bitcoinHeader;
+        pow.subRoot = subRoot;
+        
+        block.SetAuxpow(new CAuxPow(pow));
+        assert(block.GetHash() == hash);
     }
     
-    UniValue chainBranch = params[4].get_array();
-    std::vector<uint256> vChainMerkleBranch;
-    for (size_t idx = 0; idx < chainBranch.size(); idx++) {
-        uint256 tmpHash;
-        tmpHash.SetHex(chainBranch[idx].get_str());
-        vChainMerkleBranch.push_back(tmpHash);
-    }
-    
-    uint256 subRoot;
-    subRoot.SetHex(params[5].get_str());
-    
-    CAuxPow pow;
-    pow.coinbaseTx = vchtx;
-    pow.vMerkleBranch = vMerkleBranch;
-    pow.vChainMerkleBranch = vChainMerkleBranch;
-    pow.parentBlock = bitcoinHeader;
-    pow.subRoot = subRoot;
-    
-    block.SetAuxpow(new CAuxPow(pow));
-    assert(block.GetHash() == hash);
-
     // This is a straight cut & paste job from submitblock()
     bool fBlockPresent = false;
     {
