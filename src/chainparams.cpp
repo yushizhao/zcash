@@ -51,10 +51,10 @@ public:
         /**
          * The message start string should be awesome! ⓩ❤
          */
-        pchMessageStart[0] = 0xfb;
-        pchMessageStart[1] = 0x2a;
-        pchMessageStart[2] = 0x3d;
-        pchMessageStart[3] = 0x4a;
+        pchMessageStart[0] = 0x24;
+        pchMessageStart[1] = 0xe9;
+        pchMessageStart[2] = 0x27;
+        pchMessageStart[3] = 0x64;
         vAlertPubKey = ParseHex("04b7ecf0baa90495ceb4e4090f6b2fd37eec1e9c85fac68a487f3ce11589692e4a317479316ee814e066638e1db54e37a10689b70286e6315b1087b6615d179264");
         nDefaultPort = 8083;
         nMaxTipAge = 24 * 60 * 60;
@@ -167,10 +167,10 @@ public:
         consensus.nMajorityWindow = 400;
         consensus.powLimit = uint256S("0000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.fPowAllowMinDifficultyBlocks = true;
-        pchMessageStart[0] = 0xfa;
-        pchMessageStart[1] = 0xbf;
-        pchMessageStart[2] = 0xb5;
-        pchMessageStart[3] = 0xda;
+        pchMessageStart[0] = 0xfb;
+        pchMessageStart[1] = 0x2a;
+        pchMessageStart[2] = 0x3d;
+        pchMessageStart[3] = 0x4a;
         vAlertPubKey = ParseHex("044e7a1553392325c871c5ace5d6ad73501c66f4c185d6b0453cf45dec5a1322e705c672ac1a27ef7cdaf588c10effdf50ed5f95f85f2f54a5f6159fca394ed0c6");
         nDefaultPort = 18083;
         nPruneAfterHeight = 1000;
