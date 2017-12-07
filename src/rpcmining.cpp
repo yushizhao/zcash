@@ -752,7 +752,10 @@ UniValue auxpowToJSON(const CAuxPow& auxpow)
     const std::string strHex = HexStr(ssParent.begin(), ssParent.end());
     result.push_back(Pair("parentblock", strHex));
     
-    result.push_back(Pair("subRoot", auxpow.subRoot.GetHex()));
+    CDataStream ssSub(SER_NETWORK, PROTOCOL_VERSION);
+    ssSub << auxpow.vSubTree;
+    const std::string strHex2 = HexStr(ssSub.begin(), ssSub.end());  
+    result.push_back(Pair("vSubTree", strHex2));
     
     return result;
 }
@@ -761,7 +764,7 @@ UniValue auxpowToJSON(const CAuxPow& auxpow)
 #ifdef ENABLE_WALLET
 UniValue getauxblockbip22(const UniValue& params, bool fHelp)
 {
-    if (fHelp || (params.size() != 0 && params.size() != 2 && params.size() != 6))
+    if (fHelp || (params.size() != 0 && params.size() != 2 && params.size() != 3 && params.size() != 6))
         throw std::runtime_error(
             "getauxblock (hash auxpow)\n"
             "\nCreate or submit a merge-mined block.\n"
@@ -903,12 +906,38 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         pow.vMerkleBranch = classicPow.vMerkleBranch;
         pow.vChainMerkleBranch = classicPow.vChainMerkleBranch;
         pow.parentBlock = classicPow.parentBlock;
-        pow.subRoot = classicPow.hashBlock;
 
         block.SetAuxpow(new CAuxPow(pow));
         assert(block.GetHash() == hash);
         
-    } else {
+    }
+    else if (params.size() == 3)
+    {
+        const std::vector<unsigned char> vchAuxPow = ParseHex(params[1].get_str());
+        CDataStream ss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
+            
+        CClassicAuxPow classicPow;
+        ss >> classicPow;
+      
+        const std::vector<unsigned char> vchAuxPowSupplement = ParseHex(params[2].get_str());
+        CDataStream sss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
+        
+        std::vector<CAuxPowSupplement> vAuxPowSupplement;
+        sss >> vAuxPowSupplement;
+        
+        CAuxPow pow;
+        
+        pow.coinbaseTx = ParseHex(classicPow.ToHex());
+        pow.vMerkleBranch = classicPow.vMerkleBranch;
+        pow.vChainMerkleBranch = classicPow.vChainMerkleBranch;
+        pow.parentBlock = classicPow.parentBlock;
+        pow.vSubTree = vAuxPowSupplement;
+
+        block.SetAuxpow(new CAuxPow(pow));
+        assert(block.GetHash() == hash);
+    }
+    else 
+    {
         assert(params.size() == 6);
 
         const std::vector<unsigned char> vchheader = ParseHex(params[1].get_str());
@@ -934,15 +963,18 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
             vChainMerkleBranch.push_back(tmpHash);
         }
         
-        uint256 subRoot;
-        subRoot.SetHex(params[5].get_str());
+        const std::vector<unsigned char> vchAuxPowSupplement = ParseHex(params[5].get_str());
+        CDataStream sss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
+        
+        std::vector<CAuxPowSupplement> vAuxPowSupplement;
+        sss >> vAuxPowSupplement;
         
         CAuxPow pow;
         pow.coinbaseTx = vchtx;
         pow.vMerkleBranch = vMerkleBranch;
         pow.vChainMerkleBranch = vChainMerkleBranch;
         pow.parentBlock = bitcoinHeader;
-        pow.subRoot = subRoot;
+        pow.vSubTree = vAuxPowSupplement;
         
         block.SetAuxpow(new CAuxPow(pow));
         assert(block.GetHash() == hash);

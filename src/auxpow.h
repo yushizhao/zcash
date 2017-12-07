@@ -21,6 +21,30 @@ class CBlockIndex;
 /** Header for merge-mining data in the coinbase.  */
 static const unsigned char pchMergedMiningHeader[] = {0xfa, 0xbe, 'm', 'm'};
 
+class CAuxPowSupplement
+{
+public:
+    std::vector<uint256> vSubChainMerkleBranch;
+    int32_t nSubNonce;
+
+public:
+    CAuxPowSupplement() {
+        nSubNonce = 0;
+    }
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void
+    SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    {
+        READWRITE(vSubChainMerkleBranch);
+        READWRITE(nSubNonce);
+    }
+    
+    uint256 getIntermediateHash(uint256 hash, int nChainId); 
+};
+
 class CAuxPow
 {
     
@@ -33,8 +57,8 @@ public:
     CPureBlockHeader parentBlock;
     std::vector<unsigned char> coinbaseTx;
     
-    /** subtree root.  */
-    uint256 subRoot;
+    /** subtree. */
+    std::vector<CAuxPowSupplement> vSubTree;
 
 public:
     CAuxPow(){}
@@ -49,7 +73,7 @@ public:
         READWRITE(coinbaseTx);        
         READWRITE(vMerkleBranch);      
         READWRITE(vChainMerkleBranch);
-        READWRITE(subRoot);
+        READWRITE(vSubTree);
     }
 
     /**
@@ -82,7 +106,7 @@ public:
    * @param h The merkle block height.
    * @return The expected index for the aux hash.
    */
-    static int getExpectedIndex(int nNonce, int nChainId, unsigned h);
+    static int getExpectedIndex(uint32_t nNonce, int nChainId, unsigned h);
 };
 
 /** Add support for classic auxpow */
