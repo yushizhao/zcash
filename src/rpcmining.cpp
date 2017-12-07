@@ -920,7 +920,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         ss >> classicPow;
       
         const std::vector<unsigned char> vchAuxPowSupplement = ParseHex(params[2].get_str());
-        CDataStream sss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
+        CDataStream sss(vchAuxPowSupplement, SER_GETHASH, PROTOCOL_VERSION);
         
         std::vector<CAuxPowSupplement> vAuxPowSupplement;
         sss >> vAuxPowSupplement;
@@ -964,7 +964,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         }
         
         const std::vector<unsigned char> vchAuxPowSupplement = ParseHex(params[5].get_str());
-        CDataStream sss(vchAuxPow, SER_GETHASH, PROTOCOL_VERSION);
+        CDataStream sss(vchAuxPowSupplement, SER_GETHASH, PROTOCOL_VERSION);
         
         std::vector<CAuxPowSupplement> vAuxPowSupplement;
         sss >> vAuxPowSupplement;

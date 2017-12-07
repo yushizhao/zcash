@@ -19,18 +19,20 @@
 
 #include <algorithm>
 
-uint256 CAuxPowSupplement::getIntermediateHash(uint256 hash, int nSubChainId)
+uint256 CAuxPowSupplement::getIntermediateHash(uint256 hash, int nSubChainId) const
 {
     int nChainIndex = CAuxPow::getExpectedIndex(nSubNonce, nSubChainId, vSubChainMerkleBranch.size());
     uint256 subRoot = CBlock::CheckMerkleBranch(hash, vSubChainMerkleBranch, nChainIndex);
     std::vector<unsigned char> vchsubRoot(subRoot.begin(), subRoot.end());
     std::reverse(vchsubRoot.begin(), vchsubRoot.end());
     
-    unsigned char* pSize = reinterpret_cast<unsigned char*>(&(1 << vSubChainMerkleBranch.size()));
+    uint32_t nSubSize = (1 << vSubChainMerkleBranch.size());
+    unsigned char* pSize = reinterpret_cast<unsigned char*>(&nSubSize);
     for (int j = 0; j < 4; j++) {
         vchsubRoot.push_back(pSize[j]);
     }
-    unsigned char* pNonce = reinterpret_cast<unsigned char*>(&nSubNonce);
+    uint32_t nSubNonceNotConst = nSubNonce;
+    unsigned char* pNonce = reinterpret_cast<unsigned char*>(&nSubNonceNotConst);
     for (int j = 0; j < 4; j++) {
         vchsubRoot.push_back(pNonce[j]);
     }
@@ -89,7 +91,7 @@ CAuxPow::check2(const uint256& hashAuxBlock, const Consensus::Params& params) co
 {
     int nTotalHeight = vChainMerkleBranch.size();
     for (int i = 0; i < vSubTree.size(); i++) {
-        nTotalHeight += vSubTree[i].size();
+        nTotalHeight += vSubTree[i].vSubChainMerkleBranch.size();
     }
     if (nTotalHeight > 20)
         return error("Aux POW chain merkle branch too long");

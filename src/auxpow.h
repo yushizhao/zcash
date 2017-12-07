@@ -25,7 +25,7 @@ class CAuxPowSupplement
 {
 public:
     std::vector<uint256> vSubChainMerkleBranch;
-    int32_t nSubNonce;
+    uint32_t nSubNonce;
 
 public:
     CAuxPowSupplement() {
@@ -42,7 +42,7 @@ public:
         READWRITE(nSubNonce);
     }
     
-    uint256 getIntermediateHash(uint256 hash, int nChainId); 
+    uint256 getIntermediateHash(uint256 hash, int nChainId) const; 
 };
 
 class CAuxPow
