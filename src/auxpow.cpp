@@ -28,14 +28,10 @@ uint256 CAuxPowSupplement::getIntermediateHash(uint256 hash, int nSubChainId) co
     
     uint32_t nSubSize = (1 << vSubChainMerkleBranch.size());
     unsigned char* pSize = reinterpret_cast<unsigned char*>(&nSubSize);
-    for (int j = 0; j < 4; j++) {
-        vchsubRoot.push_back(pSize[j]);
-    }
+    vchsubRoot.insert(vchsubRoot.end(), pSize, pSize + 4);
     uint32_t nSubNonceNotConst = nSubNonce;
     unsigned char* pNonce = reinterpret_cast<unsigned char*>(&nSubNonceNotConst);
-    for (int j = 0; j < 4; j++) {
-        vchsubRoot.push_back(pNonce[j]);
-    }
+    vchsubRoot.insert(vchsubRoot.end(), pNonce, pNonce + 4);
     
     return Hash(vchsubRoot.begin(),vchsubRoot.end());
 }
