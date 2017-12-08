@@ -883,7 +883,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
             //subchainid prepare for extension
             UniValue subchainid(UniValue::VARR);
             for (int i = 0; i < std::stoi(params[0].get_str()); i++) {
-                subchainid.push_back(std::to_string(block.nNonce));
+                subchainid.push_back((uint64_t)block.nNonce);
             }
             result.push_back(Pair("subchainid", subchainid));
         } 
