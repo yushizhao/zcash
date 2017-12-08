@@ -1030,7 +1030,7 @@ UniValue getauxblock(const UniValue& params, bool fHelp)
     UniValue response = getauxblockbip22(params, fHelp);
 
     // this is a request for a new blocktemplate: return response
-    if (params.size() == 0)
+    if (params.size() < 2)
         return response;
 
     // this is a new block submission: return bool
