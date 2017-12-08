@@ -764,7 +764,7 @@ UniValue auxpowToJSON(const CAuxPow& auxpow)
 #ifdef ENABLE_WALLET
 UniValue getauxblockbip22(const UniValue& params, bool fHelp)
 {
-    if (fHelp || (params.size() != 0 && params.size() != 2 && params.size() != 3 && params.size() != 6))
+    if (fHelp || (!(params.size() < 4) && params.size() != 6))
         throw std::runtime_error(
             "getauxblock (hash auxpow)\n"
             "\nCreate or submit a merge-mined block.\n"
@@ -812,7 +812,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
     static std::vector<CBlockTemplate*> vNewBlockTemplate;
 
     /* Create a new block?  */
-    if (params.size() == 0)
+    if (params.size() < 2)
     {
         static unsigned nTransactionsUpdatedLast;
         static const CBlockIndex* pindexPrev = NULL;
@@ -868,17 +868,26 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         target.SetCompact(block.nBits, &fNegative, &fOverflow);
         if (fNegative || fOverflow || target == 0)
             throw std::runtime_error("invalid difficulty bits in block");
-
+        
         UniValue result(UniValue::VOBJ);
         result.push_back(Pair("hash", block.GetHash().GetHex()));
         result.push_back(Pair("chainid", block.nVersion.GetChainId()));
-        result.push_back(Pair("subchainid", std::to_string(block.nNonce)));
         result.push_back(Pair("previousblockhash", block.hashPrevBlock.GetHex()));
         result.push_back(Pair("coinbasevalue", (int64_t)block.vtx[0].vout[0].nValue));
         result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
         result.push_back(Pair("height", static_cast<int64_t> (pindexPrev->nHeight + 1)));
         result.push_back(Pair("target", HexStr(BEGIN(target), END(target))));
-
+        
+        
+        if (params.size() == 1) {
+            //subchainid prepare for extension
+            Array subchainid;
+            for (int i = 0; i < params[0].get_int(); i++) {
+                subchainid.push_back(std::to_string(block.nNonce));
+            }           
+            result.push_back(Pair("subchainid", subchainid));
+        } 
+      
         return result;
     }
 
