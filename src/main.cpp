@@ -3098,12 +3098,17 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     assert(pindexPrev);
 
     int nHeight = pindexPrev->nHeight+1;
-
-    // Check proof of work
+    
+    // Check nBits
     if (block.nBits != GetNextWorkRequired(pindexPrev, &block, consensusParams))
-        return state.DoS(100, error("%s: incorrect proof of work", __func__),
+        return state.DoS(100, error("%s: incorrect nBits", __func__),
                          REJECT_INVALID, "bad-diffbits");
 
+    // Check nNonce(nHeight)
+    if (block.nNonce != nHeight)
+        return state.Invalid(error("%s: block's nNonce(nHeight) is incorrect", __func__),
+                             REJECT_INVALID, "bad-nNonce(nHeight)");
+                         
     // Check timestamp against prev
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
         return state.Invalid(error("%s: block's timestamp is too early", __func__),
