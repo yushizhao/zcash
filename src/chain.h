@@ -190,7 +190,6 @@ public:
 
         nVersion       = 0;
         hashMerkleRoot = uint256();
-        hashReserved   = uint256();
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
