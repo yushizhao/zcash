@@ -17,6 +17,7 @@ zcash_gtest_SOURCES += \
 	wallet/gtest/test_wallet_zkeys.cpp
 endif
 zcash_gtest_SOURCES += \
+	gtest/test_tautology.cpp \
 	gtest/test_deprecation.cpp \
 	gtest/test_httprpc.cpp \
 	gtest/test_joinsplit.cpp \
@@ -24,6 +25,8 @@ zcash_gtest_SOURCES += \
 	gtest/test_noteencryption.cpp \
 	gtest/test_mempool.cpp \
 	gtest/test_merkletree.cpp \
+	gtest/test_metrics.cpp \
+	gtest/test_random.cpp \
 	gtest/test_rpc.cpp \
 	gtest/test_transaction.cpp \
 	gtest/test_validation.cpp \
