@@ -886,7 +886,7 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
             for (int i = 0; i < nSubtreeLayer); i++) {
                 subchainid.push_back((uint64_t)block.nNonce);
             }
-            result.push_back(Pair("subchainid", Params.consensus.nSubAuxpowChainId));
+            result.push_back(Pair("subchainid", Params().consensus.nSubAuxpowChainId));
         } 
       
         return result;
