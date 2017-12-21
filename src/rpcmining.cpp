@@ -882,11 +882,11 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
         if (params.size() == 1) {
             //subchainid prepare for extension
             UniValue subchainid(UniValue::VARR);
-            int nSubtreeLayer = std::stoi(params[0].get_str();
-            for (int i = 0; i < nSubtreeLayer); i++) {
-                subchainid.push_back((uint64_t)block.nNonce);
+            int nSubtreeLayer = std::stoi(params[0].get_str());
+            for (int i = 0; i < nSubtreeLayer; i++) {
+                subchainid.push_back((uint64_t)Params().consensus.nSubAuxpowChainId);
             }
-            result.push_back(Pair("subchainid", Params().consensus.nSubAuxpowChainId));
+            result.push_back(Pair("subchainid", subchainid));
         } 
       
         return result;
