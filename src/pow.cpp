@@ -153,8 +153,6 @@ bool CheckAuxPowProofOfWork(const CBlockHeader& block, const Consensus::Params& 
         if (!block.auxpow->check(block.GetHash(), params))
             return error("%s : AUX POW is not valid", __func__);
     } else {
-        if (block.nNonce != params.nSubAuxpowChainId)
-            return error("%s : block's sub chain ID is not valid", __func__);
         if (!block.auxpow->check2(block.GetHash(), params))
             return error("%s : AUX POW 2 is not valid", __func__);
     }
