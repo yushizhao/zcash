@@ -353,7 +353,6 @@ public:
             READWRITE(*pauxpow);
         } else if (ser_action.ForRead())
             pauxpow.reset();
-        }
 
         // Only read/write nSproutValue if the client version used to create
         // this index was storing them.
