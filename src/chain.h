@@ -229,6 +229,8 @@ public:
         return ret;
     }
 
+    CBlockHeader GetBlockHeader() const;
+
     uint256 GetBlockHash() const
     {
         return *phashBlock;
