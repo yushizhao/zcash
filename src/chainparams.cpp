@@ -167,7 +167,6 @@ public:
         consensus.nMajorityRejectBlockOutdated = 75;
         consensus.nMajorityWindow = 400;
         consensus.powLimit = uint256S("0000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-        consensus.fPowAllowMinDifficultyBlocks = true;
         pchMessageStart[0] = 0xfb;
         pchMessageStart[1] = 0x2a;
         pchMessageStart[2] = 0x3d;
