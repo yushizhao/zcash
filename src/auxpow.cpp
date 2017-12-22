@@ -85,15 +85,18 @@ CAuxPow::check(const uint256& hashAuxBlock, const Consensus::Params& params) con
 bool
 CAuxPow::check2(const uint256& hashAuxBlock, const Consensus::Params& params) const
 {
+    int nSubtreeLayer = vSubTree.size();
+    if (nSubtreeLayer > 4)
+        return error("Too many sub tree layer");
     int nTotalHeight = vChainMerkleBranch.size();
-    for (int i = 0; i < vSubTree.size(); i++) {
+    for (int i = 0; i < nSubtreeLayer; i++) {
         nTotalHeight += vSubTree[i].vSubChainMerkleBranch.size();
     }
     if (nTotalHeight > 20)
         return error("Aux POW chain merkle branch too long");
     
     uint256 intermediateHash = hashAuxBlock;
-    for (int i = vSubTree.size() - 1; i >= 0; i--) {
+    for (int i = nSubtreeLayer - 1; i >= 0; i--) {
         intermediateHash = vSubTree[i].getIntermediateHash(intermediateHash,params.nSubAuxpowChainId);
     }    
     
