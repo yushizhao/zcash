@@ -50,10 +50,10 @@ public:
         /**
          * The message start string should be awesome! ⓩ❤
          */
-        pchMessageStart[0] = 0x24;
-        pchMessageStart[1] = 0xe9;
-        pchMessageStart[2] = 0x27;
-        pchMessageStart[3] = 0x64;
+        pchMessageStart[0] = 0x1c;
+        pchMessageStart[1] = 0xa7;
+        pchMessageStart[2] = 0xfe;
+        pchMessageStart[3] = 0xdd;
         vAlertPubKey = ParseHex("04b7ecf0baa90495ceb4e4090f6b2fd37eec1e9c85fac68a487f3ce11589692e4a317479316ee814e066638e1db54e37a10689b70286e6315b1087b6615d179264");
         nDefaultPort = 8083;
         nMaxTipAge = 24 * 60 * 60;
