@@ -852,7 +852,6 @@ UniValue getauxblockbip22(const UniValue& params, bool fHelp)
             IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
             pblock->nVersion.SetAuxpow(true);
             pblock->nVersion.SetAuxpow2(true);
-            pblock->nNonce = chainActive.Height() + 1;
             pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 
             // Save
