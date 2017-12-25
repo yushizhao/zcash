@@ -70,7 +70,7 @@ public:
          * >>> 'Zcash' + blake2s(b'The Economist 2016-10-29 Known unknown: Another crypto-currency is born. BTC#436254 0000000000000000044f321997f336d2908cf8c8d6893e88dbf067e2d949487d ETH#2521903 483039a6b6bd8bd05f0584f9a078d075e454925eb71c1f13eaff59b405a721bb DJIA close on 27 Oct 2016: 18,169.68').hexdigest()
          */
 
-        consensus.hashGenesisBlock.SetHex("1f126494ccb222bb61d0953adf6b9f485284d00a35b86c947eb35555e9597b7d");
+        consensus.hashGenesisBlock.SetHex("a620ef36772e06c93cab2a3448be68beb89fcf39f354871125d9d950051071dd");
         
         vFixedSeeds.clear();
         vSeeds.clear();
