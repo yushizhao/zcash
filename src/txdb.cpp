@@ -321,7 +321,8 @@ bool CBlockTreeDB::LoadBlockIndexGuts()
                         return error("LoadBlockIndex(): CheckProofOfWork failed: %s", pindexNew->ToString());
                     }
                 } else {
-                    return error("LoadBlockIndex(): no auxpow in nVersion: %s", pindexNew->ToString());
+                    if (!diskindex.hashPrev.IsNull())
+                        return error("LoadBlockIndex(): no auxpow in nVersion: %s", pindexNew->ToString());
                 }
                 
                 pcursor->Next();
