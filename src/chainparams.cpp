@@ -66,15 +66,30 @@ public:
          * transaction cannot be spent since it did not originally exist in the
          * database (and is in any case of zero value).
          *
-         * >>> from pyblake2 import blake2s
-         * >>> 'Zcash' + blake2s(b'The Economist 2016-10-29 Known unknown: Another crypto-currency is born. BTC#436254 0000000000000000044f321997f336d2908cf8c8d6893e88dbf067e2d949487d ETH#2521903 483039a6b6bd8bd05f0584f9a078d075e454925eb71c1f13eaff59b405a721bb DJIA close on 27 Oct 2016: 18,169.68').hexdigest()
+            CBlock genesis;
+            const char* pszTimestamp = "WSJ 24/Jan/2018 After Bitcoin Futures, Watch Out for Crypto Repos";
+            
+            CMutableTransaction txNew;
+            txNew.vin.resize(1);
+            txNew.vout.resize(1+16529043);
+            txNew.vin[0].scriptSig = CScript() << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));        
          */
 
-        consensus.hashGenesisBlock.SetHex("a620ef36772e06c93cab2a3448be68beb89fcf39f354871125d9d950051071dd");
+        consensus.hashGenesisBlock.SetHex("32d3e76ed79d617db25ff529e44370d4787b3de3499536fac9c05a1215a1c7a7");
         
         vFixedSeeds.clear();
         vSeeds.clear();
-
+        vSeeds.push_back(CDNSSeedData("seed1.bitcoinzero.io", "seed1.bitcoinzero.io"));
+        vSeeds.push_back(CDNSSeedData("seed2.bitcoinzero.io", "seed2.bitcoinzero.io"));
+        vSeeds.push_back(CDNSSeedData("seed3.bitcoinzero.io", "seed3.bitcoinzero.io"));
+        vSeeds.push_back(CDNSSeedData("seed4.bitcoinzero.io", "seed4.bitcoinzero.io"));
+        vSeeds.push_back(CDNSSeedData("seed5.bitcoinzero.io", "seed5.bitcoinzero.io"));
+        vSeeds.push_back(CDNSSeedData("seed6.bitcoinzero.io", "seed6.bitcoinzero.io"));
+        vSeeds.push_back(CDNSSeedData("seed7.bitcoinzero.io", "seed7.bitcoinzero.io"));
+        vSeeds.push_back(CDNSSeedData("seed8.bitcoinzero.io", "seed8.bitcoinzero.io"));
+        vSeeds.push_back(CDNSSeedData("seed9.bitcoinzero.io", "seed9.bitcoinzero.io"));
+        vSeeds.push_back(CDNSSeedData("seed10.bitcoinzero.io", "seed10.bitcoinzero.io"));
+        
         base58Prefixes[PUBKEY_ADDRESS]     = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS]     = std::vector<unsigned char>(1,5);
         base58Prefixes[SECRET_KEY]         = std::vector<unsigned char>(1,128);
