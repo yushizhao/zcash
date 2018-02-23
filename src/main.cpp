@@ -1493,8 +1493,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos)
     }
 
     // Check the header
-    if (!(CheckEquihashSolution(&block, Params()) &&
-          CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus())))
+    if (!CheckAuxPowProofOfWork(block, Params().GetConsensus()))
         return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 
     return true;
@@ -1510,30 +1509,72 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
     return true;
 }
 
-CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
-{
-    CAmount nSubsidy = 12.5 * COIN;
+/* Generic implementation of block reading that can handle
+   both a block and its header.  */
 
-    // Mining slow start
-    // The subsidy is ramped up linearly, skipping the middle payout of
-    // MAX_SUBSIDY/2 to keep the monetary curve consistent with no slow start.
-    if (nHeight < consensusParams.nSubsidySlowStartInterval / 2) {
-        nSubsidy /= consensusParams.nSubsidySlowStartInterval;
-        nSubsidy *= nHeight;
-        return nSubsidy;
-    } else if (nHeight < consensusParams.nSubsidySlowStartInterval) {
-        nSubsidy /= consensusParams.nSubsidySlowStartInterval;
-        nSubsidy *= (nHeight+1);
-        return nSubsidy;
+template<typename T>
+static bool ReadBlockOrHeader(T& block, const CDiskBlockPos& pos)
+{
+    block.SetNull();
+
+    // Open history file to read
+    CAutoFile filein(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION);
+    if (filein.IsNull())
+        return error("ReadBlockFromDisk: OpenBlockFile failed for %s", pos.ToString());
+
+    // Read block
+    try {
+        filein >> block;
+    }
+    catch (const std::exception& e) {
+        return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), pos.ToString());
     }
 
-    assert(nHeight > consensusParams.SubsidySlowStartShift());
-    int halvings = (nHeight - consensusParams.SubsidySlowStartShift()) / consensusParams.nSubsidyHalvingInterval;
+    // Check the header
+    if (!CheckAuxPowProofOfWork(block, Params().GetConsensus()))
+        return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+
+    return true;
+}
+
+template<typename T>
+static bool ReadBlockOrHeader(T& block, const CBlockIndex* pindex)
+{
+    if (!ReadBlockOrHeader(block, pindex->GetBlockPos()))
+        return false;
+    if (block.GetHash() != pindex->GetBlockHash())
+        return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s",
+                pindex->ToString(), pindex->GetBlockPos().ToString());
+    return true;
+}
+
+// bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos)
+// {
+    // return ReadBlockOrHeader(block, pos);
+// }
+
+// bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
+// {
+    // return ReadBlockOrHeader(block, pindex);
+// }
+
+bool ReadBlockHeaderFromDisk(CBlockHeader& block, const CBlockIndex* pindex)
+{
+    return ReadBlockOrHeader(block, pindex);
+}
+
+CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
+{
+    // reflect bitcoin 478558 chainstate's history. 
+    // 4 is the nSubsidyHalvingInterval ratio (zcash/bitcoin).
+    nHeight = nHeight + 478558*4;
+    
+    int halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
     // Force block reward to zero when right shift is undefined.
     if (halvings >= 64)
         return 0;
 
-    // Subsidy is cut in half every 840,000 blocks which will occur approximately every 4 years.
+    CAmount nSubsidy = 12.5 * COIN;
     nSubsidy >>= halvings;
     return nSubsidy;
 }
@@ -4166,8 +4207,6 @@ bool InitBlockIndex() {
     return true;
 }
 
-
-
 bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
 {
     const CChainParams& chainparams = Params();
@@ -4214,6 +4253,109 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
                 blkdat >> block;
                 nRewind = blkdat.GetPos();
 
+                // detect out of order blocks, and store them for later
+                uint256 hash = block.GetHash();
+                if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex.find(block.hashPrevBlock) == mapBlockIndex.end()) {
+                    LogPrint("reindex", "%s: Out of order block %s, parent %s not known\n", __func__, hash.ToString(),
+                            block.hashPrevBlock.ToString());
+                    if (dbp)
+                        mapBlocksUnknownParent.insert(std::make_pair(block.hashPrevBlock, *dbp));
+                    continue;
+                }
+
+                // process in case the block isn't known yet
+                if (mapBlockIndex.count(hash) == 0 || (mapBlockIndex[hash]->nStatus & BLOCK_HAVE_DATA) == 0) {
+                    CValidationState state;
+                    if (ProcessNewBlock(state, NULL, &block, true, dbp))
+                        nLoaded++;
+                    if (state.IsError())
+                        break;
+                } else if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex[hash]->nHeight % 1000 == 0) {
+                    LogPrintf("Block Import: already had block %s at height %d\n", hash.ToString(), mapBlockIndex[hash]->nHeight);
+                }
+
+                // Recursively process earlier encountered successors of this block
+                deque<uint256> queue;
+                queue.push_back(hash);
+                while (!queue.empty()) {
+                    uint256 head = queue.front();
+                    queue.pop_front();
+                    std::pair<std::multimap<uint256, CDiskBlockPos>::iterator, std::multimap<uint256, CDiskBlockPos>::iterator> range = mapBlocksUnknownParent.equal_range(head);
+                    while (range.first != range.second) {
+                        std::multimap<uint256, CDiskBlockPos>::iterator it = range.first;
+                        if (ReadBlockFromDisk(block, it->second))
+                        {
+                            LogPrintf("%s: Processing out of order child %s of %s\n", __func__, block.GetHash().ToString(),
+                                    head.ToString());
+                            CValidationState dummy;
+                            if (ProcessNewBlock(dummy, NULL, &block, true, &it->second))
+                            {
+                                nLoaded++;
+                                queue.push_back(block.GetHash());
+                            }
+                        }
+                        range.first++;
+                        mapBlocksUnknownParent.erase(it);
+                    }
+                }
+            } catch (const std::exception& e) {
+                LogPrintf("%s: Deserialize or I/O error - %s\n", __func__, e.what());
+            }
+        }
+    } catch (const std::runtime_error& e) {
+        AbortNode(std::string("System error: ") + e.what());
+    }
+    if (nLoaded > 0)
+        LogPrintf("Loaded %i blocks from external file in %dms\n", nLoaded, GetTimeMillis() - nStart);
+    return nLoaded > 0;
+}
+
+bool LoadExternalGenesisBlockFile(FILE* fileIn, CDiskBlockPos *dbp)
+{
+    const CChainParams& chainparams = Params();
+    // Map of disk positions for blocks with unknown parent (only used for reindex)
+    static std::multimap<uint256, CDiskBlockPos> mapBlocksUnknownParent;
+    int64_t nStart = GetTimeMillis();
+
+    int nLoaded = 0;
+    try {
+        // This takes over fileIn and calls fclose() on it in the CBufferedFile destructor
+        CBufferedFile blkdat(fileIn, 600*1024*1024, MAX_BLOCK_SIZE+8, SER_DISK, CLIENT_VERSION);
+        uint64_t nRewind = blkdat.GetPos();
+        while (!blkdat.eof()) {
+            boost::this_thread::interruption_point();
+
+            blkdat.SetPos(nRewind);
+            nRewind++; // start one byte further next time, in case of failure
+            blkdat.SetLimit(); // remove former limit // really? Anyway?
+            unsigned int nSize = 0;
+            try {
+                // locate a header
+                unsigned char buf[MESSAGE_START_SIZE];
+                blkdat.FindByte(Params().MessageStart()[0]);
+                nRewind = blkdat.GetPos()+1;
+                blkdat >> FLATDATA(buf);
+                if (memcmp(buf, Params().MessageStart(), MESSAGE_START_SIZE))
+                    continue;
+                // read size
+                blkdat >> nSize;
+                LogPrintf("BitcoinZero: Genesis nSize = %d.\n", nSize);
+                if (nSize < 80)
+                    continue;
+            } catch (const std::exception&) {
+                // no valid block header found; don't complain
+                break;
+            }
+            try {
+                // read block
+                uint64_t nBlockPos = blkdat.GetPos();
+                if (dbp)
+                    dbp->nPos = nBlockPos;
+                blkdat.SetLimit(nBlockPos + nSize);
+                CBlock block;
+                blkdat >> block;
+                nRewind = blkdat.GetPos();
+                
                 // detect out of order blocks, and store them for later
                 uint256 hash = block.GetHash();
                 if (hash != chainparams.GetConsensus().hashGenesisBlock && mapBlockIndex.find(block.hashPrevBlock) == mapBlockIndex.end()) {
