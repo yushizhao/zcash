@@ -1,7 +1,8 @@
 #include "JoinSplit.hpp"
 #include "prf.h"
 #include "sodium.h"
-
+#include "../util.h"
+#include "../hash.h"
 #include "zcash/util.h"
 
 #include <memory>
@@ -75,6 +76,7 @@ public:
 
     JoinSplitCircuit(const std::string vkPath, const std::string pkPath) : pkPath(pkPath) {
         loadFromFile(vkPath, vk);
+        LogPrintf("vkPath %s\n", vkPath);
         vk_precomp = r1cs_ppzksnark_verifier_process_vk(vk);
     }
     ~JoinSplitCircuit() {}
@@ -124,7 +126,15 @@ public:
                 vpub_old,
                 vpub_new
             );
-
+            LogPrintf("* G1 elements in VK: %zu\n", vk.G1_size());
+            LogPrintf("* G2 elements in VK: %zu\n", vk.G2_size());
+            LogPrintf("* VK size in bits: %zu\n", vk.size_in_bits());
+            LogPrintf("rt %s\n",rt.ToString());
+            LogPrintf("h_sig %s\n",h_sig.ToString());
+            LogPrintf("macs %s\n",macs[0].ToString());
+            LogPrintf("nullifiers %s\n",nullifiers[0].ToString());
+            LogPrintf("commitments %s\n",commitments[0].ToString());
+            LogPrintf("r1cs_proof %s\n",SerializeHash(proof).ToString());
             return verifier.check(
                 vk,
                 vk_precomp,

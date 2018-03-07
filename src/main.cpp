@@ -944,6 +944,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state,
     } else {
         // Ensure that zk-SNARKs verify
         BOOST_FOREACH(const JSDescription &joinsplit, tx.vjoinsplit) {
+            LogPrintf("joinsplit.Verify(*pzcashParams, verifier, tx.joinSplitPubKey): \n",joinsplit.Verify(*pzcashParams, verifier, tx.joinSplitPubKey));
             if (!joinsplit.Verify(*pzcashParams, verifier, tx.joinSplitPubKey)) {
                 return state.DoS(100, error("CheckTransaction(): joinsplit does not verify"),
                                     REJECT_INVALID, "bad-txns-joinsplit-verification-failed");
