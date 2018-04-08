@@ -9,7 +9,6 @@ from test_framework.util import assert_equal, assert_greater_than, start_nodes,\
     initialize_chain_clean, connect_nodes_bi, wait_and_assert_operationid_status
 
 import logging
-import time
 import math
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
@@ -60,6 +59,12 @@ class ZkeyImportExportTest (BitcoinTestFramework):
 
             try:
                 assert_equal(amts, [tx["amount"] for tx in txs])
+                for tx in txs:
+                    # make sure JoinSplit keys exist and have valid values
+                    assert_equal( "jsindex" in tx, True)
+                    assert_equal( "jsoutindex" in tx, True)
+                    assert_greater_than( tx["jsindex"], -1 )
+                    assert_greater_than( tx["jsoutindex"], -1 )
             except AssertionError:
                 logging.error(
                     'Expected amounts: %r; txs: %r',

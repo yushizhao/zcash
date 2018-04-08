@@ -1,6 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin Core developers
-// Copyright (c) 2014-2015 The Dogecoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,9 +7,17 @@
 
 #include "arith_uint256.h"
 #include "chain.h"
+#include "chainparams.h"
 #include "primitives/block.h"
+#include "streams.h"
 #include "uint256.h"
 #include "util.h"
+
+#include "sodium.h"
+
+#ifdef ENABLE_RUST
+#include "librustzcash.h"
+#endif // ENABLE_RUST
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
@@ -126,39 +133,4 @@ int64_t GetBlockProofEquivalentTime(const CBlockIndex& to, const CBlockIndex& fr
         return sign * std::numeric_limits<int64_t>::max();
     }
     return sign * r.GetLow64();
-}
-
-bool CheckAuxPowProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
-{
-    if (block.hashPrevBlock.IsNull()) {
-        return true;
-    }
-
-    /* If there is no auxpow, just check the block hash.  */
-    if (!block.auxpow) {
-
-        // if (!CheckProofOfWork(block.GetPoWHash(), block.nBits, params))
-            // return error("%s : non-AUX proof of work failed", __func__);
-
-        return error("non-AUX proof of work is not allowed.");
-    }
-
-    /* We have auxpow.  Check it.  */
-    if (block.nVersion.GetChainId() != params.nAuxpowChainId)
-        return error("%s : block's chain ID is not valid", __func__);
-    
-    if (!block.nVersion.IsAuxpow2()) {
-        if (!block.nVersion.IsAuxpow())
-            return error("%s : No auxpow flag in nVersion", __func__);
-        if (!block.auxpow->check(block.GetHash(), params))
-            return error("%s : AUX POW is not valid", __func__);
-    } else {
-        if (!block.auxpow->check2(block.GetHash(), params))
-            return error("%s : AUX POW 2 is not valid", __func__);
-    }
-    
-    if (!CheckProofOfWork(block.auxpow->getParentBlockPoWHash(), block.nBits, params))
-        return error("%s : AUX proof of work failed", __func__);
-    
-    return true;
 }

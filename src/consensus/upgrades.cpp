@@ -22,7 +22,7 @@ const struct NUInfo NetworkUpgradeInfo[Consensus::MAX_NETWORK_UPGRADES] = {
     {
         /*.nBranchId =*/ 0x5ba81b19,
         /*.strName =*/ "Overwinter",
-        /*.strInfo =*/ "TBD",
+        /*.strInfo =*/ "See https://z.cash/upgrade/overwinter.html for details.",
     }
 };
 
@@ -69,6 +69,8 @@ int CurrentEpoch(int nHeight, const Consensus::Params& params) {
             return idxInt;
         }
     }
+    // Base case
+    return Consensus::BASE_SPROUT;
 }
 
 uint32_t CurrentEpochBranchId(int nHeight, const Consensus::Params& params) {
