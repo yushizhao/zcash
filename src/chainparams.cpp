@@ -54,8 +54,11 @@ public:
         consensus.vUpgrades[Consensus::UPGRADE_TESTDUMMY].nActivationHeight =
             Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
         consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nProtocolVersion = 170005;
-        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight =
-            Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;        
+        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight = 347500;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nProtocolVersion = 170007;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight =
+            Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
+
         /**
          * The message start string should be awesome! ⓩ❤
          */
@@ -217,6 +220,9 @@ public:
             Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
         consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nProtocolVersion = 170003;
         consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight = 207500;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nProtocolVersion = 170006;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight =
+            Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
 
         pchMessageStart[0] = 0xfb;
         pchMessageStart[1] = 0x2a;
@@ -300,6 +306,9 @@ public:
             Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
         consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nProtocolVersion = 170003;
         consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight =
+            Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nProtocolVersion = 170006;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight =
             Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0xbf;
