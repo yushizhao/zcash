@@ -36,7 +36,7 @@ public:
 
     template <typename Stream, typename Operation>
     inline void
-    SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(vSubChainMerkleBranch);
         READWRITE(nSubNonce);
@@ -67,7 +67,7 @@ public:
 
     template <typename Stream, typename Operation>
     inline void
-    SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(parentBlock);
         READWRITE(coinbaseTx);        
@@ -130,9 +130,8 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+    inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(*const_cast<int32_t*>(&this->nVersion));
-        nVersion = this->nVersion;
         READWRITE(*const_cast<std::vector<CTxIn>*>(&vin));
         READWRITE(*const_cast<std::vector<CTxOut>*>(&vout));
         READWRITE(*const_cast<uint32_t*>(&nLockTime));
@@ -154,10 +153,9 @@ public:
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    inline void SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(*(CPureTransaction*)this);
-        nVersion = this->nVersion;
         READWRITE(hashBlock);
         READWRITE(vMerkleBranch);
         READWRITE(nIndex);
@@ -186,10 +184,9 @@ public:
 
     template <typename Stream, typename Operation>
     inline void
-    SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    SerializationOp(Stream& s, Operation ser_action)
     {
         READWRITE(*static_cast<CPureMerkleTx*>(this));
-        nVersion = this->nVersion;
 
         READWRITE(vChainMerkleBranch);
         READWRITE(nChainIndex);
