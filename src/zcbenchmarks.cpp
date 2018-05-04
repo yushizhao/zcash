@@ -181,7 +181,7 @@ double benchmark_large_tx(size_t nInputs)
 
     CMutableTransaction spending_tx;
     spending_tx.fOverwintered = true;
-    spending_tx.nVersion = 3;
+    spending_tx.nVersion = OVERWINTER_TX_VERSION;
     spending_tx.nVersionGroupId = OVERWINTER_VERSION_GROUP_ID;
 
     auto input_hash = orig_tx.GetHash();
@@ -304,7 +304,7 @@ public:
         return false;
     }
 
-    bool GetNullifier(const uint256 &nf) const {
+    bool GetNullifier(const uint256 &nf, NullifierType type) const {
         return false;
     }
 
@@ -320,7 +320,8 @@ public:
                     const uint256 &hashBlock,
                     const uint256 &hashAnchor,
                     CAnchorsMap &mapAnchors,
-                    CNullifiersMap &mapNullifiers) {
+                    CNullifiersMap &mapSproutNullifiers,
+                    CNullifiersMap& mapSaplingNullifiers) {
         return false;
     }
 

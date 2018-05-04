@@ -153,31 +153,8 @@ public:
         return fCoinBase;
     }
 
-    unsigned int GetSerializeSize(int nType, int nVersion) const {
-        unsigned int nSize = 0;
-        unsigned int nMaskSize = 0, nMaskCode = 0;
-        CalcMaskSize(nMaskSize, nMaskCode);
-        bool fFirst = vout.size() > 0 && !vout[0].IsNull();
-        bool fSecond = vout.size() > 1 && !vout[1].IsNull();
-        assert(fFirst || fSecond || nMaskCode);
-        unsigned int nCode = 8*(nMaskCode - (fFirst || fSecond ? 0 : 1)) + (fCoinBase ? 1 : 0) + (fFirst ? 2 : 0) + (fSecond ? 4 : 0);
-        // version
-        nSize += ::GetSerializeSize(VARINT(this->nVersion), nType, nVersion);
-        // size of header code
-        nSize += ::GetSerializeSize(VARINT(nCode), nType, nVersion);
-        // spentness bitmask
-        nSize += nMaskSize;
-        // txouts
-        for (unsigned int i = 0; i < vout.size(); i++)
-            if (!vout[i].IsNull())
-                nSize += ::GetSerializeSize(CTxOutCompressor(REF(vout[i])), nType, nVersion);
-        // height
-        nSize += ::GetSerializeSize(VARINT(nHeight), nType, nVersion);
-        return nSize;
-    }
-
     template<typename Stream>
-    void Serialize(Stream &s, int nType, int nVersion) const {
+    void Serialize(Stream &s) const {
         unsigned int nMaskSize = 0, nMaskCode = 0;
         CalcMaskSize(nMaskSize, nMaskCode);
         bool fFirst = vout.size() > 0 && !vout[0].IsNull();
@@ -185,33 +162,33 @@ public:
         assert(fFirst || fSecond || nMaskCode);
         unsigned int nCode = 8*(nMaskCode - (fFirst || fSecond ? 0 : 1)) + (fCoinBase ? 1 : 0) + (fFirst ? 2 : 0) + (fSecond ? 4 : 0);
         // version
-        ::Serialize(s, VARINT(this->nVersion), nType, nVersion);
+        ::Serialize(s, VARINT(this->nVersion));
         // header code
-        ::Serialize(s, VARINT(nCode), nType, nVersion);
+        ::Serialize(s, VARINT(nCode));
         // spentness bitmask
         for (unsigned int b = 0; b<nMaskSize; b++) {
             unsigned char chAvail = 0;
             for (unsigned int i = 0; i < 8 && 2+b*8+i < vout.size(); i++)
                 if (!vout[2+b*8+i].IsNull())
                     chAvail |= (1 << i);
-            ::Serialize(s, chAvail, nType, nVersion);
+            ::Serialize(s, chAvail);
         }
         // txouts themself
         for (unsigned int i = 0; i < vout.size(); i++) {
             if (!vout[i].IsNull())
-                ::Serialize(s, CTxOutCompressor(REF(vout[i])), nType, nVersion);
+                ::Serialize(s, CTxOutCompressor(REF(vout[i])));
         }
         // coinbase height
-        ::Serialize(s, VARINT(nHeight), nType, nVersion);
+        ::Serialize(s, VARINT(nHeight));
     }
 
     template<typename Stream>
-    void Unserialize(Stream &s, int nType, int nVersion) {
+    void Unserialize(Stream &s) {
         unsigned int nCode = 0;
         // version
-        ::Unserialize(s, VARINT(this->nVersion), nType, nVersion);
+        ::Unserialize(s, VARINT(this->nVersion));
         // header code
-        ::Unserialize(s, VARINT(nCode), nType, nVersion);
+        ::Unserialize(s, VARINT(nCode));
         fCoinBase = nCode & 1;
         std::vector<bool> vAvail(2, false);
         vAvail[0] = (nCode & 2) != 0;
@@ -220,7 +197,7 @@ public:
         // spentness bitmask
         while (nMaskCode > 0) {
             unsigned char chAvail = 0;
-            ::Unserialize(s, chAvail, nType, nVersion);
+            ::Unserialize(s, chAvail);
             for (unsigned int p = 0; p < 8; p++) {
                 bool f = (chAvail & (1 << p)) != 0;
                 vAvail.push_back(f);
@@ -232,10 +209,10 @@ public:
         vout.assign(vAvail.size(), CTxOut());
         for (unsigned int i = 0; i < vAvail.size(); i++) {
             if (vAvail[i])
-                ::Unserialize(s, REF(CTxOutCompressor(vout[i])), nType, nVersion);
+                ::Unserialize(s, REF(CTxOutCompressor(vout[i])));
         }
         // coinbase height
-        ::Unserialize(s, VARINT(nHeight), nType, nVersion);
+        ::Unserialize(s, VARINT(nHeight));
         Cleanup();
     }
 
@@ -321,6 +298,12 @@ struct CNullifiersCacheEntry
     CNullifiersCacheEntry() : entered(false), flags(0) {}
 };
 
+enum NullifierType
+{
+    SPROUT_NULLIFIER,
+    SAPLING_NULLIFIER,
+};
+
 typedef boost::unordered_map<uint256, CCoinsCacheEntry, CCoinsKeyHasher> CCoinsMap;
 typedef boost::unordered_map<uint256, CAnchorsCacheEntry, CCoinsKeyHasher> CAnchorsMap;
 typedef boost::unordered_map<uint256, CNullifiersCacheEntry, CCoinsKeyHasher> CNullifiersMap;
@@ -347,7 +330,7 @@ public:
     virtual bool GetAnchorAt(const uint256 &rt, ZCIncrementalMerkleTree &tree) const;
 
     //! Determine whether a nullifier is spent or not
-    virtual bool GetNullifier(const uint256 &nullifier) const;
+    virtual bool GetNullifier(const uint256 &nullifier, NullifierType type) const;
 
     //! Retrieve the CCoins (unspent transaction outputs) for a given txid
     virtual bool GetCoins(const uint256 &txid, CCoins &coins) const;
@@ -368,7 +351,8 @@ public:
                             const uint256 &hashBlock,
                             const uint256 &hashAnchor,
                             CAnchorsMap &mapAnchors,
-                            CNullifiersMap &mapNullifiers);
+                            CNullifiersMap &mapSproutNullifiers,
+                            CNullifiersMap &mapSaplingNullifiers);
 
     //! Calculate statistics about the unspent transaction output set
     virtual bool GetStats(CCoinsStats &stats) const;
@@ -387,7 +371,7 @@ protected:
 public:
     CCoinsViewBacked(CCoinsView *viewIn);
     bool GetAnchorAt(const uint256 &rt, ZCIncrementalMerkleTree &tree) const;
-    bool GetNullifier(const uint256 &nullifier) const;
+    bool GetNullifier(const uint256 &nullifier, NullifierType type) const;
     bool GetCoins(const uint256 &txid, CCoins &coins) const;
     bool HaveCoins(const uint256 &txid) const;
     uint256 GetBestBlock() const;
@@ -397,7 +381,8 @@ public:
                     const uint256 &hashBlock,
                     const uint256 &hashAnchor,
                     CAnchorsMap &mapAnchors,
-                    CNullifiersMap &mapNullifiers);
+                    CNullifiersMap &mapSproutNullifiers,
+                    CNullifiersMap &mapSaplingNullifiers);
     bool GetStats(CCoinsStats &stats) const;
 };
 
@@ -440,7 +425,8 @@ protected:
     mutable CCoinsMap cacheCoins;
     mutable uint256 hashAnchor;
     mutable CAnchorsMap cacheAnchors;
-    mutable CNullifiersMap cacheNullifiers;
+    mutable CNullifiersMap cacheSproutNullifiers;
+    mutable CNullifiersMap cacheSaplingNullifiers;
 
     /* Cached dynamic memory usage for the inner CCoins objects. */
     mutable size_t cachedCoinsUsage;
@@ -451,7 +437,7 @@ public:
 
     // Standard CCoinsView methods
     bool GetAnchorAt(const uint256 &rt, ZCIncrementalMerkleTree &tree) const;
-    bool GetNullifier(const uint256 &nullifier) const;
+    bool GetNullifier(const uint256 &nullifier, NullifierType type) const;
     bool GetCoins(const uint256 &txid, CCoins &coins) const;
     bool HaveCoins(const uint256 &txid) const;
     uint256 GetBestBlock() const;
@@ -461,7 +447,8 @@ public:
                     const uint256 &hashBlock,
                     const uint256 &hashAnchor,
                     CAnchorsMap &mapAnchors,
-                    CNullifiersMap &mapNullifiers);
+                    CNullifiersMap &mapSproutNullifiers,
+                    CNullifiersMap &mapSaplingNullifiers);
 
 
     // Adds the tree to mapAnchors and sets the current commitment
@@ -472,8 +459,8 @@ public:
     // the new current root.
     void PopAnchor(const uint256 &rt);
 
-    // Marks a nullifier as spent or not.
-    void SetNullifier(const uint256 &nullifier, bool spent);
+    // Marks nullifiers for a given transaction as spent or not.
+    void SetNullifiers(const CTransaction& tx, bool spent);
 
     /**
      * Return a pointer to CCoins in the cache, or NULL if not found. This is

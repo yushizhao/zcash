@@ -66,6 +66,8 @@
 #include "amqp/amqpnotificationinterface.h"
 #endif
 
+#include "librustzcash.h"
+
 using namespace std;
 
 extern void ThreadSendAlert();
@@ -683,15 +685,34 @@ bool InitSanityCheck(void)
 }
 
 
-static void ZC_LoadParams()
+static void ZC_LoadParams(
+    const CChainParams& chainparams
+)
 {
     struct timeval tv_start, tv_end;
     float elapsed;
 
     boost::filesystem::path pk_path = ZC_GetParamsDir() / "sprout-proving.key";
     boost::filesystem::path vk_path = ZC_GetParamsDir() / "sprout-verifying.key";
+    boost::filesystem::path sapling_spend = ZC_GetParamsDir() / "sapling-spend-testnet.params";
+    boost::filesystem::path sapling_output = ZC_GetParamsDir() / "sapling-output-testnet.params";
+    boost::filesystem::path sprout_groth16 = ZC_GetParamsDir() / "sprout-groth16-testnet.params";
 
-    if (!(boost::filesystem::exists(pk_path) && boost::filesystem::exists(vk_path))) {
+    bool sapling_paths_valid = true;
+
+    // We don't load Sapling zk-SNARK params if mainnet is configured
+    if (chainparams.NetworkIDString() != "main") {
+        sapling_paths_valid =
+            boost::filesystem::exists(sapling_spend) &&
+            boost::filesystem::exists(sapling_output) &&
+            boost::filesystem::exists(sprout_groth16);
+    }
+
+    if (!(
+        boost::filesystem::exists(pk_path) &&
+        boost::filesystem::exists(vk_path) &&
+        sapling_paths_valid
+    )) {
         uiInterface.ThreadSafeMessageBox(strprintf(
             _("Cannot find the Zcash network parameters in the following directory:\n"
               "%s\n"
@@ -710,6 +731,29 @@ static void ZC_LoadParams()
     gettimeofday(&tv_end, 0);
     elapsed = float(tv_end.tv_sec-tv_start.tv_sec) + (tv_end.tv_usec-tv_start.tv_usec)/float(1000000);
     LogPrintf("Loaded verifying key in %fs seconds.\n", elapsed);
+
+    if (chainparams.NetworkIDString() != "main") {
+        std::string sapling_spend_str = sapling_spend.string();
+        std::string sapling_output_str = sapling_output.string();
+        std::string sprout_groth16_str = sprout_groth16.string();
+
+        LogPrintf("Loading Sapling (Spend) parameters from %s\n", sapling_spend_str.c_str());
+        LogPrintf("Loading Sapling (Output) parameters from %s\n", sapling_output_str.c_str());
+        LogPrintf("Loading Sapling (Sprout Groth16) parameters from %s\n", sprout_groth16_str.c_str());
+        gettimeofday(&tv_start, 0);
+
+        librustzcash_init_zksnark_params(
+            sapling_spend_str.c_str(),
+            sapling_output_str.c_str(),
+            sprout_groth16_str.c_str()
+        );
+
+        gettimeofday(&tv_end, 0);
+        elapsed = float(tv_end.tv_sec-tv_start.tv_sec) + (tv_end.tv_usec-tv_start.tv_usec)/float(1000000);
+        LogPrintf("Loaded Sapling parameters in %fs seconds.\n", elapsed);
+    } else {
+        LogPrintf("Not loading Sapling parameters in mainnet\n");
+    }
 }
 
 bool AppInitServers(boost::thread_group& threadGroup)
@@ -789,6 +833,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // Ignore SIGPIPE, otherwise it will bring the daemon down if the client closes unexpectedly
     signal(SIGPIPE, SIG_IGN);
 #endif
+
+    std::set_new_handler(new_handler_terminate);
 
     // ********************************************************* Step 2: parameter interactions
     const CChainParams& chainparams = Params();
@@ -1173,7 +1219,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     libsnark::inhibit_profiling_counters = true;
 
     // Initialize Zcash circuit parameters
-    ZC_LoadParams();
+    ZC_LoadParams(chainparams);
 
     /* Start the RPC server already.  It will be started in "warmup" mode
      * and not really process calls already (but it will signify connections
@@ -1211,6 +1257,20 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // ********************************************************* Step 6: network initialization
 
     RegisterNodeSignals(GetNodeSignals());
+
+    // sanitize comments per BIP-0014, format user agent and check total size
+    std::vector<string> uacomments;
+    BOOST_FOREACH(string cmt, mapMultiArgs["-uacomment"])
+    {
+        if (cmt != SanitizeString(cmt, SAFE_CHARS_UA_COMMENT))
+            return InitError(strprintf("User Agent comment (%s) contains unsafe characters.", cmt));
+        uacomments.push_back(SanitizeString(cmt, SAFE_CHARS_UA_COMMENT));
+    }
+    strSubVersion = FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, uacomments);
+    if (strSubVersion.size() > MAX_SUBVERSION_LENGTH) {
+        return InitError(strprintf("Total length of network version string %i exceeds maximum of %i characters. Reduce the number and/or size of uacomments.",
+            strSubVersion.size(), MAX_SUBVERSION_LENGTH));
+    }
 
     if (mapArgs.count("-onlynet")) {
         std::set<enum Network> nets;

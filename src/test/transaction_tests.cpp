@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE(test_basic_joinsplit_verification)
     libzcash::SpendingKey k = libzcash::SpendingKey::random();
     libzcash::PaymentAddress addr = k.address();
 
-    libzcash::Note note(addr.a_pk, 100, uint256(), uint256());
+    libzcash::SproutNote note(addr.a_pk, 100, uint256(), uint256());
 
     // commitment from coin
     uint256 commitment = note.cm();
@@ -396,6 +396,69 @@ BOOST_AUTO_TEST_CASE(test_basic_joinsplit_verification)
         auto test = JSDescription(*pzcashParams, pubKeyHash, rt, inputs, outputs, 0, 0);
         test.anchor = GetRandHash();
         BOOST_CHECK(!test.Verify(*pzcashParams, verifier, pubKeyHash));
+    }
+}
+
+void test_simple_sapling_invalidity(uint32_t consensusBranchId, CMutableTransaction tx)
+{
+    {
+        CMutableTransaction newTx(tx);
+        CValidationState state;
+
+        BOOST_CHECK(!CheckTransactionWithoutProofVerification(newTx, state));
+        BOOST_CHECK(state.GetRejectReason() == "bad-txns-vin-empty");
+    }
+    {
+        CMutableTransaction newTx(tx);
+        CValidationState state;
+
+        newTx.vShieldedSpend.push_back(SpendDescription());
+        newTx.vShieldedSpend[0].nullifier = GetRandHash();
+
+        BOOST_CHECK(!CheckTransactionWithoutProofVerification(newTx, state));
+        BOOST_CHECK(state.GetRejectReason() == "bad-txns-vout-empty");
+    }
+    {
+        // Ensure that nullifiers are never duplicated within a transaction.
+        CMutableTransaction newTx(tx);
+        CValidationState state;
+
+        newTx.vShieldedSpend.push_back(SpendDescription());
+        newTx.vShieldedSpend[0].nullifier = GetRandHash();
+
+        newTx.vShieldedOutput.push_back(OutputDescription());
+
+        newTx.vShieldedSpend.push_back(SpendDescription());
+        newTx.vShieldedSpend[1].nullifier = newTx.vShieldedSpend[0].nullifier;
+
+        BOOST_CHECK(!CheckTransactionWithoutProofVerification(newTx, state));
+        BOOST_CHECK(state.GetRejectReason() == "bad-spend-description-nullifiers-duplicate");
+
+        newTx.vShieldedSpend[1].nullifier = GetRandHash();
+
+        BOOST_CHECK(CheckTransactionWithoutProofVerification(newTx, state));
+    }
+    {
+        CMutableTransaction newTx(tx);
+        CValidationState state;
+
+        // Create a coinbase transaction
+        CTxIn vin;
+        vin.prevout = COutPoint();
+        newTx.vin.push_back(vin);
+        CTxOut vout;
+        vout.nValue = 1;
+        newTx.vout.push_back(vout);
+
+        newTx.vShieldedOutput.push_back(OutputDescription());
+
+        BOOST_CHECK(!CheckTransactionWithoutProofVerification(newTx, state));
+        BOOST_CHECK(state.GetRejectReason() == "bad-cb-has-output-description");
+
+        newTx.vShieldedSpend.push_back(SpendDescription());
+
+        BOOST_CHECK(!CheckTransactionWithoutProofVerification(newTx, state));
+        BOOST_CHECK(state.GetRejectReason() == "bad-cb-has-spend-description");
     }
 }
 
@@ -542,11 +605,19 @@ BOOST_AUTO_TEST_CASE(test_simple_joinsplit_invalidity_driver) {
         CMutableTransaction mtx;
         mtx.fOverwintered = true;
         mtx.nVersionGroupId = OVERWINTER_VERSION_GROUP_ID;
-        mtx.nVersion = 3;
+        mtx.nVersion = OVERWINTER_TX_VERSION;
 
         UpdateNetworkUpgradeParameters(Consensus::UPGRADE_OVERWINTER, Consensus::NetworkUpgrade::ALWAYS_ACTIVE);
         test_simple_joinsplit_invalidity(NetworkUpgradeInfo[Consensus::UPGRADE_OVERWINTER].nBranchId, mtx);
         UpdateNetworkUpgradeParameters(Consensus::UPGRADE_OVERWINTER, Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT);
+
+        // Test Sapling things
+        mtx.nVersionGroupId = SAPLING_VERSION_GROUP_ID;
+        mtx.nVersion = SAPLING_TX_VERSION;
+
+        UpdateNetworkUpgradeParameters(Consensus::UPGRADE_SAPLING, Consensus::NetworkUpgrade::ALWAYS_ACTIVE);
+        test_simple_sapling_invalidity(NetworkUpgradeInfo[Consensus::UPGRADE_SAPLING].nBranchId, mtx);
+        UpdateNetworkUpgradeParameters(Consensus::UPGRADE_SAPLING, Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT);
 
         // Switch back to mainnet parameters as originally selected in test fixture
         SelectParams(CBaseChainParams::MAIN);
@@ -594,7 +665,7 @@ BOOST_AUTO_TEST_CASE(test_big_overwinter_transaction) {
     uint32_t consensusBranchId = NetworkUpgradeInfo[Consensus::UPGRADE_OVERWINTER].nBranchId;
     CMutableTransaction mtx;
     mtx.fOverwintered = true;
-    mtx.nVersion = 3;
+    mtx.nVersion = OVERWINTER_TX_VERSION;
     mtx.nVersionGroupId = OVERWINTER_VERSION_GROUP_ID;
 
     CKey key;

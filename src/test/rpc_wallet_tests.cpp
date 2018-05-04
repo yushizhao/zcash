@@ -291,6 +291,11 @@ BOOST_AUTO_TEST_CASE(rpc_wallet)
     BOOST_CHECK_THROW(CallRPC("getblock 2147483648"), runtime_error); // not allowed, > int32 used for nHeight
     BOOST_CHECK_THROW(CallRPC("getblock 100badchars"), runtime_error);
     BOOST_CHECK_NO_THROW(CallRPC("getblock 0"));
+    BOOST_CHECK_NO_THROW(CallRPC("getblock 0 0"));
+    BOOST_CHECK_NO_THROW(CallRPC("getblock 0 1"));
+    BOOST_CHECK_NO_THROW(CallRPC("getblock 0 2"));
+    BOOST_CHECK_THROW(CallRPC("getblock 0 -1"), runtime_error); // bad verbosity
+    BOOST_CHECK_THROW(CallRPC("getblock 0 3"), runtime_error); // bad verbosity
 }
 
 BOOST_AUTO_TEST_CASE(rpc_wallet_getbalance)
@@ -1178,7 +1183,7 @@ BOOST_AUTO_TEST_CASE(rpc_z_sendmany_internals)
             BOOST_CHECK( string(e.what()).find("anchor is null")!= string::npos);
         }
 
-        info.notes.push_back(Note());
+        info.notes.push_back(SproutNote());
         try {
             proxy.perform_joinsplit(info);
         } catch (const std::runtime_error & e) {
@@ -1716,7 +1721,7 @@ BOOST_AUTO_TEST_CASE(rpc_z_mergetoaddress_internals)
             BOOST_CHECK( string(e.what()).find("anchor is null")!= string::npos);
         }
 
-        info.notes.push_back(Note());
+        info.notes.push_back(SproutNote());
         try {
             proxy.perform_joinsplit(info);
             BOOST_FAIL("Should have caused an error");

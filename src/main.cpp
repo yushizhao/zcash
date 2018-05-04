@@ -577,7 +577,7 @@ bool AddOrphanTx(const CTransaction& tx, NodeId peer) EXCLUSIVE_LOCKS_REQUIRED(c
     // have been mined or received.
     // 10,000 orphans, each of which is at most 5,000 bytes big is
     // at most 500 megabytes of orphans:
-    unsigned int sz = tx.GetSerializeSize(SER_NETWORK, tx.nVersion);
+    unsigned int sz = GetSerializeSize(tx, SER_NETWORK, tx.nVersion);
     if (sz > 5000)
     {
         LogPrint("mempool", "ignoring large orphan tx (size: %u, hash: %s)\n", sz, hash.ToString());
@@ -647,9 +647,16 @@ unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans) EXCLUSIVE_LOCKS_REQUIRE
 
 bool IsStandardTx(const CTransaction& tx, string& reason, const int nHeight)
 {
-    bool isOverwinter = NetworkUpgradeActive(nHeight, Params().GetConsensus(), Consensus::UPGRADE_OVERWINTER);
+    bool overwinterActive = NetworkUpgradeActive(nHeight, Params().GetConsensus(), Consensus::UPGRADE_OVERWINTER);
+    bool saplingActive = NetworkUpgradeActive(nHeight, Params().GetConsensus(), Consensus::UPGRADE_SAPLING);
 
-    if (isOverwinter) {
+    if (saplingActive) {
+        // Sapling standard rules apply
+        if (tx.nVersion > CTransaction::SAPLING_MAX_CURRENT_VERSION || tx.nVersion < CTransaction::SAPLING_MIN_CURRENT_VERSION) {
+            reason = "sapling-version";
+            return false;
+        }
+    } else if (overwinterActive) {
         // Overwinter standard rules apply
         if (tx.nVersion > CTransaction::OVERWINTER_MAX_CURRENT_VERSION || tx.nVersion < CTransaction::OVERWINTER_MIN_CURRENT_VERSION) {
             reason = "overwinter-version";
@@ -868,8 +875,9 @@ unsigned int GetP2SHSigOpCount(const CTransaction& tx, const CCoinsViewCache& in
  */
 bool ContextualCheckTransaction(const CTransaction& tx, CValidationState &state, const int nHeight, const int dosLevel)
 {
-    bool isOverwinter = NetworkUpgradeActive(nHeight, Params().GetConsensus(), Consensus::UPGRADE_OVERWINTER);
-    bool isSprout = !isOverwinter;
+    bool overwinterActive = NetworkUpgradeActive(nHeight, Params().GetConsensus(), Consensus::UPGRADE_OVERWINTER);
+    bool saplingActive = NetworkUpgradeActive(nHeight, Params().GetConsensus(), Consensus::UPGRADE_SAPLING);
+    bool isSprout = !overwinterActive;
 
     // If Sprout rules apply, reject transactions which are intended for Overwinter and beyond
     if (isSprout && tx.fOverwintered) {
@@ -877,12 +885,41 @@ bool ContextualCheckTransaction(const CTransaction& tx, CValidationState &state,
                          REJECT_INVALID, "tx-overwinter-not-active");
     }
 
-    // If Overwinter rules apply:
-    if (isOverwinter) {
+    if (saplingActive) {
+        // Reject transactions with valid version but missing overwintered flag
+        if (tx.nVersion >= SAPLING_MIN_TX_VERSION && !tx.fOverwintered) {
+            return state.DoS(dosLevel, error("ContextualCheckTransaction(): overwintered flag must be set"),
+                            REJECT_INVALID, "tx-overwintered-flag-not-set");
+        }
+
+        // Reject transactions with non-Sapling version group ID
+        if (tx.fOverwintered && tx.nVersionGroupId != SAPLING_VERSION_GROUP_ID) {
+            return state.DoS(dosLevel, error("CheckTransaction(): invalid Sapling tx version"),
+                    REJECT_INVALID, "bad-sapling-tx-version-group-id");
+        }
+
+        // Reject transactions with invalid version
+        if (tx.fOverwintered && tx.nVersion < SAPLING_MIN_TX_VERSION ) {
+            return state.DoS(100, error("CheckTransaction(): Sapling version too low"),
+                REJECT_INVALID, "bad-tx-sapling-version-too-low");
+        }
+
+        // Reject transactions with invalid version
+        if (tx.fOverwintered && tx.nVersion > SAPLING_MAX_TX_VERSION ) {
+            return state.DoS(100, error("CheckTransaction(): Sapling version too high"),
+                REJECT_INVALID, "bad-tx-sapling-version-too-high");
+        }
+    } else if (overwinterActive) {
         // Reject transactions with valid version but missing overwinter flag
         if (tx.nVersion >= OVERWINTER_MIN_TX_VERSION && !tx.fOverwintered) {
             return state.DoS(dosLevel, error("ContextualCheckTransaction(): overwinter flag must be set"),
                             REJECT_INVALID, "tx-overwinter-flag-not-set");
+        }
+
+        // Reject transactions with non-Overwinter version group ID
+        if (tx.fOverwintered && tx.nVersionGroupId != OVERWINTER_VERSION_GROUP_ID) {
+            return state.DoS(dosLevel, error("CheckTransaction(): invalid Overwinter tx version"),
+                    REJECT_INVALID, "bad-overwinter-tx-version-group-id");
         }
 
         // Reject transactions with invalid version
@@ -890,7 +927,10 @@ bool ContextualCheckTransaction(const CTransaction& tx, CValidationState &state,
             return state.DoS(100, error("CheckTransaction(): overwinter version too high"),
                 REJECT_INVALID, "bad-tx-overwinter-version-too-high");
         }
+    }
 
+    // Rules that apply to Overwinter or later:
+    if (overwinterActive) {
         // Reject transactions intended for Sprout
         if (!tx.fOverwintered) {
             return state.DoS(dosLevel, error("ContextualCheckTransaction: overwinter is active"),
@@ -990,7 +1030,8 @@ bool CheckTransactionWithoutProofVerification(const CTransaction& tx, CValidatio
             return state.DoS(100, error("CheckTransaction(): overwinter version too low"),
                 REJECT_INVALID, "bad-tx-overwinter-version-too-low");
         }
-        if (tx.nVersionGroupId != OVERWINTER_VERSION_GROUP_ID) {
+        if (tx.nVersionGroupId != OVERWINTER_VERSION_GROUP_ID &&
+                tx.nVersionGroupId != SAPLING_VERSION_GROUP_ID) {
             return state.DoS(100, error("CheckTransaction(): unknown tx version group id"),
                     REJECT_INVALID, "bad-tx-version-group-id");
         }
@@ -1000,12 +1041,14 @@ bool CheckTransactionWithoutProofVerification(const CTransaction& tx, CValidatio
         }
     }
 
-    // Transactions can contain empty `vin` and `vout` so long as
-    // `vjoinsplit` is non-empty.
-    if (tx.vin.empty() && tx.vjoinsplit.empty())
+    // Transactions containing empty `vin` must have either non-empty
+    // `vjoinsplit` or non-empty `vShieldedSpend`.
+    if (tx.vin.empty() && tx.vjoinsplit.empty() && tx.vShieldedSpend.empty())
         return state.DoS(10, error("CheckTransaction(): vin empty"),
                          REJECT_INVALID, "bad-txns-vin-empty");
-    if (tx.vout.empty() && tx.vjoinsplit.empty())
+    // Transactions containing empty `vout` must have either non-empty
+    // `vjoinsplit` or non-empty `vShieldedOutput`.
+    if (tx.vout.empty() && tx.vjoinsplit.empty() && tx.vShieldedOutput.empty())
         return state.DoS(10, error("CheckTransaction(): vout empty"),
                          REJECT_INVALID, "bad-txns-vout-empty");
 
@@ -1098,16 +1141,31 @@ bool CheckTransactionWithoutProofVerification(const CTransaction& tx, CValidatio
     }
 
     // Check for duplicate joinsplit nullifiers in this transaction
-    set<uint256> vJoinSplitNullifiers;
-    BOOST_FOREACH(const JSDescription& joinsplit, tx.vjoinsplit)
     {
-        BOOST_FOREACH(const uint256& nf, joinsplit.nullifiers)
+        set<uint256> vJoinSplitNullifiers;
+        BOOST_FOREACH(const JSDescription& joinsplit, tx.vjoinsplit)
         {
-            if (vJoinSplitNullifiers.count(nf))
-                return state.DoS(100, error("CheckTransaction(): duplicate nullifiers"),
-                             REJECT_INVALID, "bad-joinsplits-nullifiers-duplicate");
+            BOOST_FOREACH(const uint256& nf, joinsplit.nullifiers)
+            {
+                if (vJoinSplitNullifiers.count(nf))
+                    return state.DoS(100, error("CheckTransaction(): duplicate nullifiers"),
+                                REJECT_INVALID, "bad-joinsplits-nullifiers-duplicate");
 
-            vJoinSplitNullifiers.insert(nf);
+                vJoinSplitNullifiers.insert(nf);
+            }
+        }
+    }
+
+    // Check for duplicate sapling nullifiers in this transaction
+    {
+        set<uint256> vSaplingNullifiers;
+        BOOST_FOREACH(const SpendDescription& spend_desc, tx.vShieldedSpend)
+        {
+            if (vSaplingNullifiers.count(spend_desc.nullifier))
+                return state.DoS(100, error("CheckTransaction(): duplicate nullifiers"),
+                            REJECT_INVALID, "bad-spend-description-nullifiers-duplicate");
+
+            vSaplingNullifiers.insert(spend_desc.nullifier);
         }
     }
 
@@ -1117,6 +1175,14 @@ bool CheckTransactionWithoutProofVerification(const CTransaction& tx, CValidatio
         if (tx.vjoinsplit.size() > 0)
             return state.DoS(100, error("CheckTransaction(): coinbase has joinsplits"),
                              REJECT_INVALID, "bad-cb-has-joinsplits");
+
+        // A coinbase transaction cannot have spend descriptions or output descriptions
+        if (tx.vShieldedSpend.size() > 0)
+            return state.DoS(100, error("CheckTransaction(): coinbase has spend descriptions"),
+                             REJECT_INVALID, "bad-cb-has-spend-description");
+        if (tx.vShieldedOutput.size() > 0)
+            return state.DoS(100, error("CheckTransaction(): coinbase has output descriptions"),
+                             REJECT_INVALID, "bad-cb-has-output-description");
 
         if (tx.vin[0].scriptSig.size() < 2 || tx.vin[0].scriptSig.size() > 100)
             return state.DoS(100, error("CheckTransaction(): coinbase script size"),
@@ -1234,10 +1300,14 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
     }
     BOOST_FOREACH(const JSDescription &joinsplit, tx.vjoinsplit) {
         BOOST_FOREACH(const uint256 &nf, joinsplit.nullifiers) {
-            if (pool.mapNullifiers.count(nf))
-            {
+            if (pool.nullifierExists(nf, SPROUT_NULLIFIER)) {
                 return false;
             }
+        }
+    }
+    for (const SpendDescription &spendDescription : tx.vShieldedSpend) {
+        if (pool.nullifierExists(spendDescription.nullifier, SAPLING_NULLIFIER)) {
+            return false;
         }
     }
     }
@@ -1485,7 +1555,7 @@ bool WriteBlockToDisk(CBlock& block, CDiskBlockPos& pos, const CMessageHeader::M
         return error("WriteBlockToDisk: OpenBlockFile failed");
 
     // Write index header
-    unsigned int nSize = fileout.GetSerializeSize(block);
+    unsigned int nSize = GetSerializeSize(fileout, block);
     fileout << FLATDATA(messageStart) << nSize;
 
     // Write block
@@ -1780,11 +1850,7 @@ void UpdateCoins(const CTransaction& tx, CCoinsViewCache& inputs, CTxUndo &txund
     }
 
     // spend nullifiers
-    BOOST_FOREACH(const JSDescription &joinsplit, tx.vjoinsplit) {
-        BOOST_FOREACH(const uint256 &nf, joinsplit.nullifiers) {
-            inputs.SetNullifier(nf, true);
-        }
-    }
+    inputs.SetNullifiers(tx, true);
 
     // add outputs
     inputs.ModifyCoins(tx.GetHash())->FromTx(tx, nHeight);
@@ -1959,7 +2025,7 @@ bool UndoWriteToDisk(const CBlockUndo& blockundo, CDiskBlockPos& pos, const uint
         return error("%s: OpenUndoFile failed", __func__);
 
     // Write index header
-    unsigned int nSize = fileout.GetSerializeSize(blockundo);
+    unsigned int nSize = GetSerializeSize(fileout, blockundo);
     fileout << FLATDATA(messageStart) << nSize;
 
     // Write undo data
@@ -2102,11 +2168,7 @@ bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex
         }
 
         // unspend nullifiers
-        BOOST_FOREACH(const JSDescription &joinsplit, tx.vjoinsplit) {
-            BOOST_FOREACH(const uint256 &nf, joinsplit.nullifiers) {
-                view.SetNullifier(nf, false);
-            }
-        }
+        view.SetNullifiers(tx, false);
 
         // restore inputs
         if (i > 0) { // not coinbases
@@ -4924,7 +4986,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         if (!vRecv.empty())
             vRecv >> addrFrom >> nNonce;
         if (!vRecv.empty()) {
-            vRecv >> LIMITED_STRING(pfrom->strSubVer, 256);
+            vRecv >> LIMITED_STRING(pfrom->strSubVer, MAX_SUBVERSION_LENGTH);
             pfrom->cleanSubVer = SanitizeString(pfrom->strSubVer);
         }
         if (!vRecv.empty())
@@ -6173,7 +6235,7 @@ CMutableTransaction CreateNewContextualCMutableTransaction(const Consensus::Para
     if (isOverwintered) {
         mtx.fOverwintered = true;
         mtx.nVersionGroupId = OVERWINTER_VERSION_GROUP_ID;
-        mtx.nVersion = 3;
+        mtx.nVersion = OVERWINTER_TX_VERSION;
         // Expiry height is not set. Only fields required for a parser to treat as a valid Overwinter V3 tx.
 
         // TODO: In future, when moving from Overwinter to Sapling, it will be useful

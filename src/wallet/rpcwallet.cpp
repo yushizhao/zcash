@@ -597,8 +597,8 @@ UniValue getreceivedbyaddress(const UniValue& params, bool fHelp)
     if (!address.IsValid())
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Zcash address");
     CScript scriptPubKey = GetScriptForDestination(address.Get());
-    if (!IsMine(*pwalletMain,scriptPubKey))
-        return (double)0.0;
+    if (!IsMine(*pwalletMain, scriptPubKey))
+        return ValueFromAmount(0);
 
     // Minimum confirmations
     int nMinDepth = 1;
@@ -676,7 +676,7 @@ UniValue getreceivedbyaccount(const UniValue& params, bool fHelp)
         }
     }
 
-    return (double)nAmount / (double)COIN;
+    return ValueFromAmount(nAmount);
 }
 
 
@@ -1341,7 +1341,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
             entry.push_back(Pair("fee", ValueFromAmount(-nFee)));
             if (fLong)
                 WalletTxToJSON(wtx, entry);
-            entry.push_back(Pair("size", static_cast<uint64_t>(static_cast<CTransaction>(wtx).GetSerializeSize(SER_NETWORK, PROTOCOL_VERSION))));
+            entry.push_back(Pair("size", static_cast<uint64_t>(GetSerializeSize(static_cast<CTransaction>(wtx), SER_NETWORK, PROTOCOL_VERSION))));
             ret.push_back(entry);
         }
     }
@@ -1378,7 +1378,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
                 entry.push_back(Pair("vout", r.vout));
                 if (fLong)
                     WalletTxToJSON(wtx, entry);
-                entry.push_back(Pair("size", static_cast<uint64_t>(static_cast<CTransaction>(wtx).GetSerializeSize(SER_NETWORK, PROTOCOL_VERSION))));
+                entry.push_back(Pair("size", static_cast<uint64_t>(GetSerializeSize(static_cast<CTransaction>(wtx), SER_NETWORK, PROTOCOL_VERSION))));
                 ret.push_back(entry);
             }
         }
@@ -2337,14 +2337,16 @@ UniValue listunspent(const UniValue& params, bool fHelp)
             "\nResult\n"
             "[                   (array of json object)\n"
             "  {\n"
-            "    \"txid\" : \"txid\",        (string) the transaction id \n"
+            "    \"txid\" : \"txid\",          (string) the transaction id \n"
             "    \"vout\" : n,               (numeric) the vout value\n"
             "    \"generated\" : true|false  (boolean) true if txout is a coinbase transaction output\n"
-            "    \"address\" : \"address\",  (string) the Zcash address\n"
-            "    \"account\" : \"account\",  (string) DEPRECATED. The associated account, or \"\" for the default account\n"
-            "    \"scriptPubKey\" : \"key\", (string) the script key\n"
+            "    \"address\" : \"address\",    (string) the Zcash address\n"
+            "    \"account\" : \"account\",    (string) DEPRECATED. The associated account, or \"\" for the default account\n"
+            "    \"scriptPubKey\" : \"key\",   (string) the script key\n"
             "    \"amount\" : x.xxx,         (numeric) the transaction amount in " + CURRENCY_UNIT + "\n"
-            "    \"confirmations\" : n       (numeric) The number of confirmations\n"
+            "    \"confirmations\" : n,      (numeric) The number of confirmations\n"
+            "    \"redeemScript\" : n        (string) The redeemScript if scriptPubKey is P2SH\n"
+            "    \"spendable\" : xxx         (bool) Whether we have the private keys to spend this output\n"
             "  }\n"
             "  ,...\n"
             "]\n"
@@ -2388,39 +2390,35 @@ UniValue listunspent(const UniValue& params, bool fHelp)
         if (out.nDepth < nMinDepth || out.nDepth > nMaxDepth)
             continue;
 
-        if (setAddress.size()) {
-            CTxDestination address;
-            if (!ExtractDestination(out.tx->vout[out.i].scriptPubKey, address))
-                continue;
+        CTxDestination address;
+        const CScript& scriptPubKey = out.tx->vout[out.i].scriptPubKey;
+        bool fValidAddress = ExtractDestination(scriptPubKey, address);
 
-            if (!setAddress.count(address))
-                continue;
-        }
+        if (setAddress.size() && (!fValidAddress || !setAddress.count(address)))
+            continue;
 
-        CAmount nValue = out.tx->vout[out.i].nValue;
-        const CScript& pk = out.tx->vout[out.i].scriptPubKey;
         UniValue entry(UniValue::VOBJ);
         entry.push_back(Pair("txid", out.tx->GetHash().GetHex()));
         entry.push_back(Pair("vout", out.i));
         entry.push_back(Pair("generated", out.tx->IsCoinBase()));
-        CTxDestination address;
-        if (ExtractDestination(out.tx->vout[out.i].scriptPubKey, address)) {
+
+        if (fValidAddress) {
             entry.push_back(Pair("address", CBitcoinAddress(address).ToString()));
+
             if (pwalletMain->mapAddressBook.count(address))
                 entry.push_back(Pair("account", pwalletMain->mapAddressBook[address].name));
-        }
-        entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
-        if (pk.IsPayToScriptHash()) {
-            CTxDestination address;
-            if (ExtractDestination(pk, address)) {
+
+            if (scriptPubKey.IsPayToScriptHash()) {
                 const CScriptID& hash = boost::get<CScriptID>(address);
                 CScript redeemScript;
                 if (pwalletMain->GetCScript(hash, redeemScript))
                     entry.push_back(Pair("redeemScript", HexStr(redeemScript.begin(), redeemScript.end())));
             }
         }
-        entry.push_back(Pair("amount",ValueFromAmount(nValue)));
-        entry.push_back(Pair("confirmations",out.nDepth));
+
+        entry.push_back(Pair("scriptPubKey", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
+        entry.push_back(Pair("amount", ValueFromAmount(out.tx->vout[out.i].nValue)));
+        entry.push_back(Pair("confirmations", out.nDepth));
         entry.push_back(Pair("spendable", out.fSpendable));
         results.push_back(entry);
     }
@@ -2539,9 +2537,9 @@ UniValue z_listunspent(const UniValue& params, bool fHelp)
     UniValue results(UniValue::VARR);
 
     if (zaddrs.size() > 0) {
-        std::vector<CUnspentNotePlaintextEntry> entries;
+        std::vector<CUnspentSproutNotePlaintextEntry> entries;
         pwalletMain->GetUnspentFilteredNotes(entries, zaddrs, nMinDepth, nMaxDepth, !fIncludeWatchonly);
-        for (CUnspentNotePlaintextEntry & entry : entries) {
+        for (CUnspentSproutNotePlaintextEntry & entry : entries) {
             UniValue obj(UniValue::VOBJ);
             obj.push_back(Pair("txid",entry.jsop.hash.ToString()));
             obj.push_back(Pair("jsindex", (int)entry.jsop.js ));
@@ -2549,8 +2547,8 @@ UniValue z_listunspent(const UniValue& params, bool fHelp)
             obj.push_back(Pair("confirmations", entry.nHeight));
             obj.push_back(Pair("spendable", pwalletMain->HaveSpendingKey(entry.address)));
             obj.push_back(Pair("address", CZCPaymentAddress(entry.address).ToString()));
-            obj.push_back(Pair("amount", ValueFromAmount(CAmount(entry.plaintext.value))));
-            std::string data(entry.plaintext.memo.begin(), entry.plaintext.memo.end());
+            obj.push_back(Pair("amount", ValueFromAmount(CAmount(entry.plaintext.value()))));
+            std::string data(entry.plaintext.memo().begin(), entry.plaintext.memo().end());
             obj.push_back(Pair("memo", HexStr(data)));
             results.push_back(obj);
         }
@@ -2797,7 +2795,7 @@ UniValue zc_raw_receive(const UniValue& params, bool fHelp)
 
     ZCNoteDecryption decryptor(k.receiving_key());
 
-    NotePlaintext npt = NotePlaintext::decrypt(
+    SproutNotePlaintext npt = SproutNotePlaintext::decrypt(
         decryptor,
         ct,
         epk,
@@ -2805,7 +2803,7 @@ UniValue zc_raw_receive(const UniValue& params, bool fHelp)
         nonce
     );
     PaymentAddress payment_addr = k.address();
-    Note decrypted_note = npt.note(payment_addr);
+    SproutNote decrypted_note = npt.note(payment_addr);
 
     assert(pwalletMain != NULL);
     std::vector<boost::optional<ZCIncrementalWitness>> witnesses;
@@ -2821,7 +2819,7 @@ UniValue zc_raw_receive(const UniValue& params, bool fHelp)
     ss << npt;
 
     UniValue result(UniValue::VOBJ);
-    result.push_back(Pair("amount", ValueFromAmount(decrypted_note.value)));
+    result.push_back(Pair("amount", ValueFromAmount(decrypted_note.value())));
     result.push_back(Pair("note", HexStr(ss.begin(), ss.end())));
     result.push_back(Pair("exists", (bool) witnesses[0]));
     return result;
@@ -2879,7 +2877,7 @@ UniValue zc_raw_joinsplit(const UniValue& params, bool fHelp)
 
     std::vector<JSInput> vjsin;
     std::vector<JSOutput> vjsout;
-    std::vector<Note> notes;
+    std::vector<SproutNote> notes;
     std::vector<SpendingKey> keys;
     std::vector<uint256> commitments;
 
@@ -2889,7 +2887,7 @@ UniValue zc_raw_joinsplit(const UniValue& params, bool fHelp)
 
         keys.push_back(k);
 
-        NotePlaintext npt;
+        SproutNotePlaintext npt;
 
         {
             CDataStream ssData(ParseHexV(name_, "note"), SER_NETWORK, PROTOCOL_VERSION);
@@ -2897,7 +2895,7 @@ UniValue zc_raw_joinsplit(const UniValue& params, bool fHelp)
         }
 
         PaymentAddress addr = k.address();
-        Note note = npt.note(addr);
+        SproutNote note = npt.note(addr);
         notes.push_back(note);
         commitments.push_back(note.cm());
     }
@@ -3163,11 +3161,11 @@ CAmount getBalanceTaddr(std::string transparentAddress, int minDepth=1, bool ign
 
 CAmount getBalanceZaddr(std::string address, int minDepth = 1, bool ignoreUnspendable=true) {
     CAmount balance = 0;
-    std::vector<CNotePlaintextEntry> entries;
+    std::vector<CSproutNotePlaintextEntry> entries;
     LOCK2(cs_main, pwalletMain->cs_wallet);
     pwalletMain->GetFilteredNotes(entries, address, minDepth, true, ignoreUnspendable);
     for (auto & entry : entries) {
-        balance += CAmount(entry.plaintext.value);
+        balance += CAmount(entry.plaintext.value());
     }
     return balance;
 }
@@ -3223,13 +3221,13 @@ UniValue z_listreceivedbyaddress(const UniValue& params, bool fHelp)
 
 
     UniValue result(UniValue::VARR);
-    std::vector<CNotePlaintextEntry> entries;
+    std::vector<CSproutNotePlaintextEntry> entries;
     pwalletMain->GetFilteredNotes(entries, fromaddress, nMinDepth, false, false);
-    for (CNotePlaintextEntry & entry : entries) {
+    for (CSproutNotePlaintextEntry & entry : entries) {
         UniValue obj(UniValue::VOBJ);
         obj.push_back(Pair("txid",entry.jsop.hash.ToString()));
-        obj.push_back(Pair("amount", ValueFromAmount(CAmount(entry.plaintext.value))));
-        std::string data(entry.plaintext.memo.begin(), entry.plaintext.memo.end());
+        obj.push_back(Pair("amount", ValueFromAmount(CAmount(entry.plaintext.value()))));
+        std::string data(entry.plaintext.memo().begin(), entry.plaintext.memo().end());
         obj.push_back(Pair("memo", HexStr(data)));
         // (txid, jsindex, jsoutindex) is needed to globally identify a note
         obj.push_back(Pair("jsindex", entry.jsop.js));
@@ -3470,7 +3468,7 @@ UniValue z_getoperationstatus_IMPL(const UniValue& params, bool fRemoveFinishedO
 // If input notes are small, we might actually require more than one joinsplit per zaddr output.
 // For now though, we assume we use one joinsplit per zaddr output (and the second output note is change).
 // We reduce the result by 1 to ensure there is room for non-joinsplit CTransaction data.
-#define Z_SENDMANY_MAX_ZADDR_OUTPUTS    ((MAX_TX_SIZE / JSDescription().GetSerializeSize(SER_NETWORK, PROTOCOL_VERSION)) - 1)
+#define Z_SENDMANY_MAX_ZADDR_OUTPUTS    ((MAX_TX_SIZE / GetSerializeSize(JSDescription(), SER_NETWORK, PROTOCOL_VERSION)) - 1)
 
 // transaction.h comment: spending taddr output requires CTxIn >= 148 bytes and typical taddr txout is 34 bytes
 #define CTXIN_SPEND_DUST_SIZE   148
@@ -3615,7 +3613,7 @@ UniValue z_sendmany(const UniValue& params, bool fHelp)
         mtx.vjoinsplit.push_back(JSDescription());
     }
     CTransaction tx(mtx);
-    txsize += tx.GetSerializeSize(SER_NETWORK, tx.nVersion);
+    txsize += GetSerializeSize(tx, SER_NETWORK, tx.nVersion);
     if (fromTaddr) {
         txsize += CTXIN_SPEND_DUST_SIZE;
         txsize += CTXOUT_REGULAR_SIZE;      // There will probably be taddr change
@@ -3886,7 +3884,7 @@ UniValue z_shieldcoinbase(const UniValue& params, bool fHelp)
 #define MERGE_TO_ADDRESS_DEFAULT_TRANSPARENT_LIMIT 50
 #define MERGE_TO_ADDRESS_DEFAULT_SHIELDED_LIMIT 10
 
-#define JOINSPLIT_SIZE JSDescription().GetSerializeSize(SER_NETWORK, PROTOCOL_VERSION)
+#define JOINSPLIT_SIZE GetSerializeSize(JSDescription(), SER_NETWORK, PROTOCOL_VERSION)
 
 UniValue z_mergetoaddress(const UniValue& params, bool fHelp)
 {
@@ -4128,13 +4126,13 @@ UniValue z_mergetoaddress(const UniValue& params, bool fHelp)
 
     if (useAny || useAnyNote || zaddrs.size() > 0) {
         // Get available notes
-        std::vector<CNotePlaintextEntry> entries;
+        std::vector<CSproutNotePlaintextEntry> entries;
         pwalletMain->GetFilteredNotes(entries, zaddrs);
 
         // Find unspent notes and update estimated size
-        for (CNotePlaintextEntry& entry : entries) {
+        for (CSproutNotePlaintextEntry& entry : entries) {
             noteCounter++;
-            CAmount nValue = entry.plaintext.value;
+            CAmount nValue = entry.plaintext.value();
 
             if (!maxedOutNotesFlag) {
                 // If we haven't added any notes yet and the merge is to a
