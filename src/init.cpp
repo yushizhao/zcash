@@ -1085,8 +1085,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 #ifdef ENABLE_MINING
     if (mapArgs.count("-mineraddress")) {
-        CBitcoinAddress addr;
-        if (!addr.SetString(mapArgs["-mineraddress"])) {
+        CTxDestination addr = DecodeDestination(mapArgs["-mineraddress"]);
+        if (!IsValidDestination(addr)) {
             return InitError(strprintf(
                 _("Invalid address for -mineraddress=<addr>: '%s' (must be a transparent address)"),
                 mapArgs["-mineraddress"]));
@@ -1730,9 +1730,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         bool minerAddressInLocalWallet = false;
         if (pwalletMain) {
             // Address has alreday been validated
-            CBitcoinAddress addr(mapArgs["-mineraddress"]);
-            CKeyID keyID;
-            addr.GetKeyID(keyID);
+            CTxDestination addr = DecodeDestination(mapArgs["-mineraddress"]);
+            CKeyID keyID = boost::get<CKeyID>(addr);
             minerAddressInLocalWallet = pwalletMain->HaveKey(keyID);
         }
         if (GetBoolArg("-minetolocalwallet", true) && !minerAddressInLocalWallet) {
